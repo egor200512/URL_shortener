@@ -1,0 +1,8 @@
+.env
+shared/vdr
+shared/bin
+services/auth/internal/gen_auth
+services/links/internal/gen_links
+
+services/auth/internal/mocks
+services/links/internal/mocks
