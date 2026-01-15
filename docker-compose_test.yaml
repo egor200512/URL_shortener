@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  order_platform_pg:
+    image: postgres:17-alpine
+    container_name: order_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_NAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_AUTH_PORT_TESTS}:5432"
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+
+volumes:
+  postgres_volume:
