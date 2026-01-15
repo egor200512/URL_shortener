@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/egor200512/PassVault/internal/models"
+	"github.com/egor200512/URL_shortener/services/auth/internal/models"
 )
 
 type IAuthRepo interface {

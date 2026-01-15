@@ -2,11 +2,9 @@ package service
 
 import (
 	"context"
-
-	"github.com/egor200512/URL_shortener/services/auth/internal/models"
 )
 
-type AuthService interface {
-	Register(context.Context, *models.RegisterRequest) error
-	Login(context.Context, string, string) (string, error)
+type IAuthService interface {
+	Register(ctx context.Context, email string, password string) error
+	Login(ctx context.Context, email string, password string) (string, error)
 }

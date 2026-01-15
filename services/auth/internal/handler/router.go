@@ -7,10 +7,10 @@ import (
 
 type AuthHandler struct {
 	desc.UnimplementedAuthServiceServer
-	authService service.AuthService
+	authService service.IAuthService
 }
 
-func NewAuthRouter(authService service.AuthService) *AuthHandler {
+func NewAuthRouter(authService service.IAuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}

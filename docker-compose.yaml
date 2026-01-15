@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgresql:
+    image: bitnami/postgresql:latest
+    container_name: url_shortener_pg
+    ports:
+      - '${PG_AUTH_PORT}:5432'
+    environment:
+      - POSTGRESQL_USERNAME=${PG_USER}
+      - POSTGRESQL_PASSWORD=${PG_PASSWORD}
+      - POSTGRESQL_DATABASE=${PG_NAME}
+    volumes:
+      - postgresql_master_data:/bitnami/postgresql
+
+volumes:
+  postgresql_master_data:

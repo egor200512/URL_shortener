@@ -1,6 +1,8 @@
 package auth
 
 import (
+	r "github.com/egor200512/URL_shortener/services/auth/internal/repository"
+	s "github.com/egor200512/URL_shortener/services/auth/internal/service"
 	"github.com/egor200512/URL_shortener/shared/configs"
 )
 

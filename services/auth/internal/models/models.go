@@ -1,14 +1,19 @@
 package models
 
-import "github.com/google/uuid"
+import (
+	"database/sql"
+
+	"github.com/google/uuid"
+)
 
 type RegisterRequest struct {
-	Email    string
-	Password string
+	Email        string
+	Salt         []byte
+	SaltPassHash []byte
 }
 
 type User struct {
-	ID       uuid.UUID
-	Email    string
-	Password string
+	ID           uuid.UUID
+	Email        string
+	RegisteredAt sql.NullTime
 }
