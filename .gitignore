@@ -6,3 +6,4 @@ services/links/internal/gen_links
 
 services/auth/internal/mocks
 services/links/internal/mocks
+shared/mocks

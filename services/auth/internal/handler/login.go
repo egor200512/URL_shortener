@@ -14,10 +14,10 @@ func (router *AuthHandler) Login(ctx context.Context, in *desc.LoginRequest) (*d
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %s", err.Error())
 	}
 
-	token, err := router.authService.Login(ctx, in.Email, in.Password)
+	t, err := router.authService.Login(ctx, in.Email, in.Password)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to login: %s", err.Error())
 	}
 
-	return &desc.LoginResponse{AccessToken: token}, nil
+	return &desc.LoginResponse{AccessToken: t.Token}, nil
 }

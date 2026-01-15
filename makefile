@@ -69,4 +69,6 @@ install-mockery:
 	GOBIN=$(LOCAL_BIN) go install github.com/vektra/mockery/v3@v3.6.1
 	
 generate-mocks:
-	${LOCAL_BIN}/mockery --config mockery.yaml
+	${LOCAL_BIN}/mockery --config mockery_auth.yaml
+	${LOCAL_BIN}/mockery --config mockery_links.yaml
+	${LOCAL_BIN}/mockery --config mockery_shared.yaml
