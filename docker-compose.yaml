@@ -1,17 +1,18 @@
 version: '3.8'
 
 services:
-  postgresql:
-    image: bitnami/postgresql:latest
-    container_name: url_shortener_pg
-    ports:
-      - '${PG_AUTH_PORT}:5432'
+  order_platform_pg:
+    image: postgres:17-alpine
+    container_name: order_pg
+    restart: unless-stopped
     environment:
-      - POSTGRESQL_USERNAME=${PG_USER}
-      - POSTGRESQL_PASSWORD=${PG_PASSWORD}
-      - POSTGRESQL_DATABASE=${PG_NAME}
+      POSTGRES_DB: ${PG_NAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_AUTH_PORT}:5432"
     volumes:
-      - postgresql_master_data:/bitnami/postgresql
+      - postgres_volume:/var/lib/postgresql/data
 
 volumes:
-  postgresql_master_data:
+  postgres_volume:

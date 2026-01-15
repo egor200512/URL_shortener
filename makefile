@@ -50,18 +50,17 @@ generate-auth:
 install-goose:
 	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.26.0
 
-migration-create:
-	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_DSN}" \
-	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} create auth_table sql
+# ==========================================================================================================================
 
-migrations-status:
-	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PG_DSN} -table goose_version_auth status -v
+migration-create-auth:
+	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_AUTH_DSN}" \
+	${LOCAL_BIN}/goose -dir ${AUTH_MIGRATION_DIR} create auth_table sql
 
-migrations-up:
-	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PG_DSN} -table goose_version_auth up -v
+migrations-up-auth:
+	${LOCAL_BIN}/goose -dir ${AUTH_MIGRATION_DIR} postgres ${PG_AUTH_DSN} -table goose_version_auth up -v
 
-migrations-down:
-	${LOCAL_BIN}/goose -dir ${MIGRATION_DIR} postgres ${PG_DSN} -table goose_version_auth down -v
+migrations-down-auth:
+	${LOCAL_BIN}/goose -dir ${AUTH_MIGRATION_DIR} postgres ${PG_AUTH_DSN} -table goose_version_auth down -v
 
 # ==========================================================================================================================
 
@@ -70,5 +69,5 @@ install-mockery:
 	
 generate-mocks:
 	${LOCAL_BIN}/mockery --config mockery_auth.yaml
-	${LOCAL_BIN}/mockery --config mockery_links.yaml
+# 	${LOCAL_BIN}/mockery --config mockery_links.yaml
 	${LOCAL_BIN}/mockery --config mockery_shared.yaml

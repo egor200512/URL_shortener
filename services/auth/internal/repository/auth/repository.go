@@ -9,7 +9,7 @@ import (
 
 const (
 	ID             = "id"
-	USERS          = "users"
+	USERS          = "auth.users"
 	EMAIL          = "email"
 	SALT           = "salt"
 	SALT_PASS_HASH = "salt_password_hash"

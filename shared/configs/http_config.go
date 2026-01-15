@@ -12,13 +12,13 @@ const (
 	HTTP_LINKS_PORT = "HTTP_LINKS_PORT"
 )
 
-type httpConf struct {
+type HttpConf struct {
 	host      string
 	authPort  string
 	linksPort string
 }
 
-func NewHttpConf() (*httpConf, error) {
+func NewHttpConf() (*HttpConf, error) {
 	var host, authPort, linksPort string
 
 	if host = os.Getenv(HTTP_HOST); len(host) == 0 {
@@ -33,17 +33,17 @@ func NewHttpConf() (*httpConf, error) {
 		return nil, errors.New("failed to get http linksPort")
 	}
 
-	return &httpConf{
+	return &HttpConf{
 		host:      host,
 		authPort:  authPort,
 		linksPort: linksPort,
 	}, nil
 }
 
-func (conf *httpConf) AuthAddress() string {
+func (conf *HttpConf) AuthAddress() string {
 	return net.JoinHostPort(conf.host, conf.authPort)
 }
 
-func (conf *httpConf) LinksAddress() string {
+func (conf *HttpConf) LinksAddress() string {
 	return net.JoinHostPort(conf.host, conf.linksPort)
 }

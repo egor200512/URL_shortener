@@ -13,11 +13,11 @@ type RegisterRequest struct {
 }
 
 type User struct {
-	ID           uuid.UUID
-	Email        string
-	Salt         []byte
-	SaltPassHash []byte
-	RegisteredAt sql.NullTime
+	ID           uuid.UUID    `db:"id"`
+	Email        string       `db:"email"`
+	Salt         []byte       `db:"salt"`
+	SaltPassHash []byte       `db:"salt_password_hash"`
+	CreatedAt    sql.NullTime `db:"created_at"`
 }
 
 type AccessToken struct {
