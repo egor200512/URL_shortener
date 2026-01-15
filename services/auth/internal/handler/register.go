@@ -20,5 +20,5 @@ func (router *AuthHandler) Register(ctx context.Context, in *desc.RegisterReques
 		return nil, status.Errorf(codes.Internal, "failed to register: %s", err.Error())
 	}
 
-	return nil, nil
+	return &emptypb.Empty{}, nil
 }

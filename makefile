@@ -10,7 +10,6 @@ install-all:
 	make install-grpc-gateway
 	make install-mockery
 	make install-goose
-	make install-wire
 
 install-grpc:
 	GOBIN=$(LOCAL_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
