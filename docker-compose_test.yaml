@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  order_platform_pg:
+  url_shortener_test:
     image: postgres:17-alpine
-    container_name: order_pg
+    container_name: url_shortener_test
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${PG_NAME}

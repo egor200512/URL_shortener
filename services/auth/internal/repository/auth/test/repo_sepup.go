@@ -2,6 +2,8 @@ package tests
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -9,15 +11,15 @@ import (
 )
 
 func SetupAuthTestDB(t *testing.T) *pgxpool.Pool {
-	// connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-	// 	os.Getenv("PG_USER"),
-	// 	os.Getenv("PG_PASSWORD"),
-	// 	os.Getenv("DB_HOST"),
-	// 	os.Getenv("PG_AUTH_PORT_TESTS"),
-	// 	os.Getenv("PG_NAME"),
-	// )
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("PG_USER"),
+		os.Getenv("PG_PASSWORD"),
+		os.Getenv("PG_HOST"),
+		os.Getenv("PG_AUTH_PORT_TESTS"),
+		os.Getenv("PG_NAME"),
+	)
 
-	pool, err := pgxpool.Connect(context.Background(), "postgres://user:pass@localhost:5434/user?sslmode=disable")
+	pool, err := pgxpool.Connect(context.Background(), connStr)
 	require.NoError(t, err)
 
 	err = pool.Ping(context.Background())
