@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package links;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "url_shortener/services/links/gen_links;links";
+
+service LinksService {
+    rpc CreateShortLink (CreateShortLinkRequest) returns (CreateShortLinkResponse){
+        option (google.api.http) = {
+            post: "/links"
+            body: "*"
+        };
+    }
+
+    rpc GetOriginalLink (GetOriginalLinkRequest) returns (GetOriginalLinkResponse){
+        option (google.api.http) = {
+            get: "/links/{short_code}"
+        };
+    }
+
+    // Получение всех ссылок пользователя (требует авторизации)
+    rpc GetUserLinks (GetUserLinksRequest) returns (GetUserLinksResponse){
+        option (google.api.http) = {
+            get: "/api/v1/links"
+        };
+    }
+
+    // Получение одной ссылки пользователя (требует авторизации)
+    rpc GetLink (GetLinkRequest) returns (LinkInfo){
+        option (google.api.http) = {
+            get: "/api/v1/links/{short_code}"
+        };
+    }
+
+    // Обновление ссылки (требует авторизации)
+    rpc UpdateLink (UpdateLinkRequest) returns (google.protobuf.Empty){
+        option (google.api.http) = {
+            put: "/api/v1/links/{short_code}"
+            body: "*"
+        };
+    }
+
+    // Удаление ссылки (требует авторизации)
+    rpc DeleteLink (DeleteLinkRequest) returns (google.protobuf.Empty){
+        option (google.api.http) = {
+            delete: "/api/v1/links/{short_code}"
+        };
+    }
+
+}
+
+message CreateShortLinkRequest {
+    string original_link = 1;
+}
+
+message CreateShortLinkResponse {
+    string email = 1;
+    string password = 2;
+}
+
+message GetOriginalLinkRequest {
+    string short_code = 1;
+}
+
+message GetOriginalLinkResponse {
+    string original_url = 1;
+}
+
+message GetUserLinksRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+message GetUserLinksResponse {
+    repeated LinkInfo links = 1;
+    int32 total_count = 2;
+}
+
+message GetLinkRequest {
+    string short_code = 1;
+}
+
+message LinkInfo {
+    string id = 1;
+    string short_code = 2;
+    string original_url = 3;
+}
+
+message UpdateLinkRequest {
+    string short_code = 1;
+    string original_url = 2;
+}
+
+message DeleteLinkRequest {
+    string short_code = 1;
+}

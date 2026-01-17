@@ -44,6 +44,18 @@ generate-auth:
 	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
 	api/auth.proto
 
+generate-links:
+	mkdir -p services/links/internal/gen_links
+	protoc --proto_path api --proto_path shared/vdr \
+	--go_out=services/links/internal/gen_links --go_opt=paths=source_relative \
+	--plugin=protoc-gen-go=shared/bin/protoc-gen-go \
+	--go-grpc_out=services/links/internal/gen_links --go-grpc_opt=paths=source_relative \
+	--plugin=protoc-gen-go-grpc=shared/bin/protoc-gen-go-grpc \
+	--grpc-gateway_out=services/links/internal/gen_links --grpc-gateway_opt=paths=source_relative \
+	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
+	api/links.proto
+
+
 # ==========================================================================================================================
 
 install-goose:
@@ -60,6 +72,17 @@ migrations-up-auth:
 
 migrations-down-auth:
 	${LOCAL_BIN}/goose -dir ${AUTH_MIGRATION_DIR} postgres ${PG_AUTH_DSN} -table goose_version_auth down -v
+
+
+migration-create-links:
+	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_LINKS_DSN}" \
+	${LOCAL_BIN}/goose -dir ${LINKS_MIGRATION_DIR} create links_table sql
+
+migrations-up-links:
+	${LOCAL_BIN}/goose -dir ${LINKS_MIGRATION_DIR} postgres ${PG_LINKS_DSN} -table goose_version_links up -v
+
+migrations-down-links:
+	${LOCAL_BIN}/goose -dir ${LINKS_MIGRATION_DIR} postgres ${PG_LINKS_DSN} -table goose_version_links down -v
 
 # ==========================================================================================================================
 
