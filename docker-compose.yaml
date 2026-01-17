@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  url_shortener:
+  url_shortener_auth_pg:
     image: postgres:17-alpine
-    container_name: url_shortener_pg
+    container_name: url_shortener_auth_pg
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${PG_NAME}
@@ -12,7 +12,21 @@ services:
     ports:
       - "${PG_AUTH_PORT}:5432"
     volumes:
-      - postgres_volume:/var/lib/postgresql/data
+      - url_shortener_auth_pg_volume:/var/lib/postgresql/data
+    
+  url_shortener_links_pg:
+    image: postgres:17-alpine
+    container_name: url_shortener_links_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_NAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_LINKS_PORT}:5432"
+    volumes:
+      - url_shortener_links_pg_volume:/var/lib/postgresql/data
 
 volumes:
-  postgres_volume:
+  url_shortener_auth_pg_volume:
+  url_shortener_links_pg_volume:

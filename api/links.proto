@@ -4,6 +4,8 @@ package links;
 
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
 
 option go_package = "url_shortener/services/links/gen_links;links";
 
@@ -24,29 +26,21 @@ service LinksService {
     // Получение всех ссылок пользователя (требует авторизации)
     rpc GetUserLinks (GetUserLinksRequest) returns (GetUserLinksResponse){
         option (google.api.http) = {
-            get: "/api/v1/links"
+            get: "/links"
         };
     }
 
     // Получение одной ссылки пользователя (требует авторизации)
     rpc GetLink (GetLinkRequest) returns (LinkInfo){
         option (google.api.http) = {
-            get: "/api/v1/links/{short_code}"
-        };
-    }
-
-    // Обновление ссылки (требует авторизации)
-    rpc UpdateLink (UpdateLinkRequest) returns (google.protobuf.Empty){
-        option (google.api.http) = {
-            put: "/api/v1/links/{short_code}"
-            body: "*"
+            get: "/links/info/{short_code}"
         };
     }
 
     // Удаление ссылки (требует авторизации)
     rpc DeleteLink (DeleteLinkRequest) returns (google.protobuf.Empty){
         option (google.api.http) = {
-            delete: "/api/v1/links/{short_code}"
+            delete: "/links/{short_code}"
         };
     }
 
@@ -57,8 +51,7 @@ message CreateShortLinkRequest {
 }
 
 message CreateShortLinkResponse {
-    string email = 1;
-    string password = 2;
+    string short_code = 1;
 }
 
 message GetOriginalLinkRequest {
@@ -86,12 +79,9 @@ message GetLinkRequest {
 message LinkInfo {
     string id = 1;
     string short_code = 2;
-    string original_url = 3;
-}
-
-message UpdateLinkRequest {
-    string short_code = 1;
-    string original_url = 2;
+    string original_url_host = 3;
+    string original_url = 4;
+    google.protobuf.Timestamp created_at = 5;
 }
 
 message DeleteLinkRequest {
