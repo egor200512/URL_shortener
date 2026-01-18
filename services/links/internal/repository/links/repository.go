@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+const (
+	LINKS              = "links.short_links"
+	ID                 = "id"
+	USER_ID            = "user_id"
+	SHORT_LINK         = "short_code"
+	ORIGINAL_LINK_HOST = "original_url_host"
+	ORIGINAL_LINK      = "original_url"
+	CREATED_AT         = "created_at"
+)
+
 type linksRepo struct {
 	pool *pgxpool.Pool
 }

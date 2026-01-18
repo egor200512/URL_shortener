@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	desc "github.com/egor200512/URL_shortener/services/auth/internal/gen_auth"
+	desc "github.com/egor200512/URL_shortener/shared/gen/auth"
 
 	ah "github.com/egor200512/URL_shortener/services/auth/internal/handler"
 	ar "github.com/egor200512/URL_shortener/services/auth/internal/repository"

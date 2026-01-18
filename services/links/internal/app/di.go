@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	desc "github.com/egor200512/URL_shortener/services/links/internal/gen_links"
+	desc "github.com/egor200512/URL_shortener/shared/gen/links"
 
 	lh "github.com/egor200512/URL_shortener/services/links/internal/handler"
 	lr "github.com/egor200512/URL_shortener/services/links/internal/repository"
@@ -31,7 +31,7 @@ func ProvideJwtConf() (configs.IJwtConf, error) {
 }
 
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
-	return pgxpool.Connect(ctx, cfg.AuthDSN())
+	return pgxpool.Connect(ctx, cfg.LinksDSN())
 }
 
 func ProvideLinksRepo(ctx context.Context, pool *pgxpool.Pool) lr.ILinksRepo {

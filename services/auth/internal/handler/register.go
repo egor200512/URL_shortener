@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	desc "github.com/egor200512/URL_shortener/services/auth/internal/gen_auth"
+	desc "github.com/egor200512/URL_shortener/shared/gen/auth"
 	pkg "github.com/egor200512/URL_shortener/shared/pkg/validation"
 
 	"google.golang.org/grpc/codes"

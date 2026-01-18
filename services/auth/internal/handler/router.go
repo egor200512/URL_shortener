@@ -1,8 +1,8 @@
 package handler
 
 import (
-	desc "github.com/egor200512/URL_shortener/services/auth/internal/gen_auth"
 	"github.com/egor200512/URL_shortener/services/auth/internal/service"
+	desc "github.com/egor200512/URL_shortener/shared/gen/auth"
 )
 
 type AuthHandler struct {

@@ -34,24 +34,24 @@ get-annotation:
 # ==========================================================================================================================
 
 generate-auth:
-	mkdir -p services/auth/internal/gen_auth
+	mkdir -p shared/gen/auth
 	protoc --proto_path api --proto_path shared/vdr \
-	--go_out=services/auth/internal/gen_auth --go_opt=paths=source_relative \
+	--go_out=shared/gen/auth --go_opt=paths=source_relative \
 	--plugin=protoc-gen-go=shared/bin/protoc-gen-go \
-	--go-grpc_out=services/auth/internal/gen_auth --go-grpc_opt=paths=source_relative \
+	--go-grpc_out=shared/gen/auth --go-grpc_opt=paths=source_relative \
 	--plugin=protoc-gen-go-grpc=shared/bin/protoc-gen-go-grpc \
-	--grpc-gateway_out=services/auth/internal/gen_auth --grpc-gateway_opt=paths=source_relative \
+	--grpc-gateway_out=shared/gen/auth --grpc-gateway_opt=paths=source_relative \
 	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
 	api/auth.proto
 
 generate-links:
-	mkdir -p services/links/internal/gen_links
+	mkdir -p shared/gen/links
 	protoc --proto_path api --proto_path shared/vdr \
-	--go_out=services/links/internal/gen_links --go_opt=paths=source_relative \
+	--go_out=shared/gen/links --go_opt=paths=source_relative \
 	--plugin=protoc-gen-go=shared/bin/protoc-gen-go \
-	--go-grpc_out=services/links/internal/gen_links --go-grpc_opt=paths=source_relative \
+	--go-grpc_out=shared/gen/links --go-grpc_opt=paths=source_relative \
 	--plugin=protoc-gen-go-grpc=shared/bin/protoc-gen-go-grpc \
-	--grpc-gateway_out=services/links/internal/gen_links --grpc-gateway_opt=paths=source_relative \
+	--grpc-gateway_out=shared/gen/links --grpc-gateway_opt=paths=source_relative \
 	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
 	api/links.proto
 

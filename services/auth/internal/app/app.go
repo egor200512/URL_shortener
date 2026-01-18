@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	desc "github.com/egor200512/URL_shortener/services/auth/internal/gen_auth"
+	desc "github.com/egor200512/URL_shortener/shared/gen/auth"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"github.com/egor200512/URL_shortener/shared/configs"

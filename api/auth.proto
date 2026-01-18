@@ -5,7 +5,7 @@ package auth;
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 
-option go_package = "url_shortener/services/auth/gen_auth;auth";
+option go_package = "url_shortener/shared/gen/auth;auth";
 
 service AuthService {
     rpc Register (RegisterRequest) returns (google.protobuf.Empty){
@@ -21,6 +21,8 @@ service AuthService {
             body: "*"
         };
     }
+
+    rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
 }
 
 message RegisterRequest {
@@ -35,4 +37,12 @@ message LoginRequest {
 
 message LoginResponse {
     string access_token = 1;
+}
+
+message VerifyTokenRequest {
+    string access_token = 1;
+}
+
+message VerifyTokenResponse {
+    string user_id = 1;
 }

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	desc "github.com/egor200512/URL_shortener/services/auth/internal/gen_auth"
 	"github.com/egor200512/URL_shortener/services/auth/internal/handler"
+	desc "github.com/egor200512/URL_shortener/shared/gen/auth"
 	pkg "github.com/egor200512/URL_shortener/shared/pkg/validation"
 
 	"github.com/egor200512/URL_shortener/services/auth/internal/mocks"

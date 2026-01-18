@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	desc "github.com/egor200512/URL_shortener/services/links/internal/gen_links"
+	desc "github.com/egor200512/URL_shortener/shared/gen/links"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"github.com/egor200512/URL_shortener/shared/configs"
