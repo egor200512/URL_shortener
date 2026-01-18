@@ -25,6 +25,8 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 
 		ProvideLinksHandler,
 
+		ProvideAuthServiceClient,
+
 		wire.Struct(new(App), "*"),
 	)
 	return nil, nil, nil

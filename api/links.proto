@@ -30,7 +30,7 @@ service LinksService {
     }
 
     // Получение одной ссылки пользователя (требует авторизации)
-    rpc GetLink (GetLinkRequest) returns (LinkInfo){
+    rpc GetLinkInfo (GetLinkInfoRequest) returns (LinkInfo){
         option (google.api.http) = {
             get: "/links/info/{short_link}"
         };
@@ -71,7 +71,7 @@ message GetUserLinksResponse {
     int32 total_count = 2;
 }
 
-message GetLinkRequest {
+message GetLinkInfoRequest {
     string short_link = 1;
 }
 

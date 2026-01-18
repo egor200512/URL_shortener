@@ -9,5 +9,5 @@ import (
 
 type ILinksRepo interface {
 	CheckShortLink(ctx context.Context, shortLink string) (*models.Link, error)
-	InsertLink(ctx context.Context, u *url.URL, shortLink string) error
+	InsertLink(ctx context.Context, u *url.URL, shortLink, user_id string) error
 }

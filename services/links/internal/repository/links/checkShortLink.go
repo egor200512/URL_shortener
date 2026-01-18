@@ -15,6 +15,8 @@ func (repo *linksRepo) CheckShortLink(ctx context.Context, shortLink string) (*m
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	if !rows.Next() {
 		return nil, nil
 	}

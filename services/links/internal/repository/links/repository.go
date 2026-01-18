@@ -12,9 +12,9 @@ const (
 	LINKS              = "links.short_links"
 	ID                 = "id"
 	USER_ID            = "user_id"
-	SHORT_LINK         = "short_code"
-	ORIGINAL_LINK_HOST = "original_url_host"
-	ORIGINAL_LINK      = "original_url"
+	SHORT_LINK         = "short_link"
+	ORIGINAL_LINK_HOST = "original_link_host"
+	ORIGINAL_LINK      = "original_link"
 	CREATED_AT         = "created_at"
 )
 

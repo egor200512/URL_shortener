@@ -36,10 +36,12 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	}
 	iLinksService := ProvideLinksService(iLinksRepo, iJwtConf)
 	linksServiceServer := ProvideLinksHandler(iLinksService)
+	authServiceClient := ProvideAuthServiceClient(grpcConf)
 	app := &App{
 		HttpConf:     httpConf,
 		GrpcConf:     grpcConf,
 		LinksHandler: linksServiceServer,
+		AuthClient:   authServiceClient,
 	}
 	return app, func() {
 	}, nil

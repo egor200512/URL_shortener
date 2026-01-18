@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"sync"
 
-	desc "github.com/egor200512/URL_shortener/shared/gen/links"
+	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
+	descL "github.com/egor200512/URL_shortener/shared/gen/links"
+	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"github.com/egor200512/URL_shortener/shared/configs"
@@ -20,16 +22,17 @@ type App struct {
 	HttpConf *configs.HttpConf
 	GrpcConf *configs.GrpcConf
 
-	LinksHandler desc.LinksServiceServer
+	LinksHandler descL.LinksServiceServer
 
 	httpServer *http.Server `wire:"-"`
 	grpcServer *grpc.Server `wire:"-"`
+	AuthClient descA.AuthServiceClient
 }
 
 func NewApp(
 	httpConf *configs.HttpConf,
 	grpcConf *configs.GrpcConf,
-	linksHandler desc.LinksServiceServer,
+	linksHandler descL.LinksServiceServer,
 ) *App {
 	return &App{
 		HttpConf:     httpConf,
@@ -41,9 +44,10 @@ func NewApp(
 func (a *App) initGRPCServer(_ context.Context) error {
 	a.grpcServer = grpc.NewServer(
 		grpc.Creds(insecure.NewCredentials()),
+		grpc.UnaryInterceptor(jwt.AuthIntersepter(a.AuthClient)),
 	)
 	reflection.Register(a.grpcServer)
-	desc.RegisterLinksServiceServer(a.grpcServer, a.LinksHandler)
+	descL.RegisterLinksServiceServer(a.grpcServer, a.LinksHandler)
 	return nil
 }
 
@@ -56,7 +60,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	if err := desc.RegisterLinksServiceHandlerFromEndpoint(ctx, router, grpcAddr, opts); err != nil {
+	if err := descL.RegisterLinksServiceHandlerFromEndpoint(ctx, router, grpcAddr, opts); err != nil {
 		return err
 	}
 

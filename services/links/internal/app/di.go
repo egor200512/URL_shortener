@@ -2,8 +2,12 @@ package app
 
 import (
 	"context"
+	"log"
 
-	desc "github.com/egor200512/URL_shortener/shared/gen/links"
+	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
+	descL "github.com/egor200512/URL_shortener/shared/gen/links"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	lh "github.com/egor200512/URL_shortener/services/links/internal/handler"
 	lr "github.com/egor200512/URL_shortener/services/links/internal/repository"
@@ -42,6 +46,14 @@ func ProvideLinksService(repo lr.ILinksRepo, jwtCfg configs.IJwtConf) ls.ILinksS
 	return lsi.NewLinksService(repo, jwtCfg)
 }
 
-func ProvideLinksHandler(svc ls.ILinksService) desc.LinksServiceServer {
+func ProvideLinksHandler(svc ls.ILinksService) descL.LinksServiceServer {
 	return lh.NewLinksRouter(svc)
+}
+
+func ProvideAuthServiceClient(conf *configs.GrpcConf) descA.AuthServiceClient {
+	conn, err := grpc.NewClient(conf.AuthAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to create auth client: %s", err.Error())
+	}
+	return descA.NewAuthServiceClient(conn)
 }

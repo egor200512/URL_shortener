@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	desc "github.com/egor200512/URL_shortener/shared/gen/links"
-	"github.com/k0kubun/pp/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,9 +20,5 @@ func (handler *LinksHandler) CreateLink(ctx context.Context, in *desc.CreateLink
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	pp.Println(l)
-	pp.Println(u)
-
-	// return &desc.CreateLinkResponse{ShortLink: l.ShortLink}, nil
-	return &desc.CreateLinkResponse{ShortLink: "123"}, nil
+	return &desc.CreateLinkResponse{ShortLink: l}, nil
 }
