@@ -91,5 +91,5 @@ install-mockery:
 	
 generate-mocks:
 	${LOCAL_BIN}/mockery --config mockery_auth.yaml
-# 	${LOCAL_BIN}/mockery --config mockery_links.yaml
+	${LOCAL_BIN}/mockery --config mockery_links.yaml
 	${LOCAL_BIN}/mockery --config mockery_shared.yaml
