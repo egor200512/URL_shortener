@@ -22,21 +22,18 @@ service LinksService {
         };
     }
 
-    // Получение всех ссылок пользователя (требует авторизации)
     rpc GetUserLinks (GetUserLinksRequest) returns (GetUserLinksResponse){
         option (google.api.http) = {
             get: "/links"
         };
     }
 
-    // Получение одной ссылки пользователя (требует авторизации)
     rpc GetLinkInfo (GetLinkInfoRequest) returns (LinkInfo){
         option (google.api.http) = {
             get: "/links/info/{short_link}"
         };
     }
 
-    // Удаление ссылки (требует авторизации)
     rpc DeleteLink (DeleteLinkRequest) returns (google.protobuf.Empty){
         option (google.api.http) = {
             delete: "/links/{short_link}"
