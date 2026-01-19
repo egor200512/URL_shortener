@@ -8,6 +8,7 @@ import (
 )
 
 type ILinksRepo interface {
-	CheckShortLink(ctx context.Context, shortLink string) (*models.Link, error)
+	GetByShortLink(ctx context.Context, shortLink string) (*models.Link, error)
+	GetByOriginalLink(ctx context.Context, originalLink string) (*models.Link, error)
 	InsertLink(ctx context.Context, u *url.URL, shortLink, user_id string) error
 }
