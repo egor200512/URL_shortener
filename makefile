@@ -93,3 +93,8 @@ generate-mocks:
 	${LOCAL_BIN}/mockery --config mockery_auth.yaml
 	${LOCAL_BIN}/mockery --config mockery_links.yaml
 	${LOCAL_BIN}/mockery --config mockery_shared.yaml
+
+delete-mocks:
+	rm -r ./shared/mocks
+	rm -r ./services/auth/internal/mocks
+	rm -r ./services/links/internal/mocks
