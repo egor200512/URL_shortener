@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
 )
@@ -10,5 +9,5 @@ import (
 type ILinksRepo interface {
 	GetByShortLink(ctx context.Context, shortLink string) (*models.Link, error)
 	GetByOriginalLink(ctx context.Context, originalLink string) (*models.Link, error)
-	InsertLink(ctx context.Context, u *url.URL, shortLink, user_id string) error
+	InsertLink(ctx context.Context, req *models.CreateLinkReq) error
 }

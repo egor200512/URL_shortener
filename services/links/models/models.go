@@ -14,3 +14,10 @@ type Link struct {
 	OriginalUrl     string       `db:"original_link"`
 	CreatedAt       sql.NullTime `db:"created_at"`
 }
+
+type CreateLinkReq struct {
+	UserID           string
+	ShortLink        string
+	OriginalLinkHost string
+	OriginalLink     string
+}

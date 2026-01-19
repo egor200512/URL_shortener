@@ -3,12 +3,11 @@ package links
 import (
 	"context"
 	"fmt"
-	"net/url"
 
-	"github.com/google/uuid"
+	"github.com/egor200512/URL_shortener/services/links/models"
 )
 
-func (repo *linksRepo) InsertLink(ctx context.Context, u *url.URL, shortLink string, user_id string) error {
+func (repo *linksRepo) InsertLink(ctx context.Context, req *models.CreateLinkReq) error {
 	query := fmt.Sprintf(`INSERT INTO %s (%s, %s, %s, %s) VALUES ($1, $2, $3, $4)`,
 		LINKS,
 		USER_ID,
@@ -16,11 +15,11 @@ func (repo *linksRepo) InsertLink(ctx context.Context, u *url.URL, shortLink str
 		ORIGINAL_LINK_HOST,
 		ORIGINAL_LINK,
 	)
-	u_id, err := uuid.Parse(user_id)
-	if err != nil {
-		return err
-	}
-	if _, err := repo.pool.Exec(ctx, query, u_id, shortLink, u.Host, u.Host+u.Path); err != nil {
+	// u_id, err := uuid.Parse(user_id)
+	// if err != nil {
+	// 	return err
+	// }
+	if _, err := repo.pool.Exec(ctx, query, req.UserID, req.ShortLink, req.OriginalLinkHost, req.OriginalLink); err != nil {
 		return err
 	}
 

@@ -2,11 +2,13 @@ package links
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 
+	"github.com/egor200512/URL_shortener/services/links/models"
+	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 	pkg "github.com/egor200512/URL_shortener/shared/pkg/links"
-	"github.com/google/uuid"
 )
 
 func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string, error) {
@@ -37,9 +39,21 @@ func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string
 		}
 	}
 
-	if err = service.linksRepo.InsertLink(ctx, u, shortLink, uuid.NewString()); err != nil {
+	userID, ok := ctx.Value(jwt.ClaimsCtxKey).(string)
+	if !ok {
+		return "", errors.New("failed to get userID from ctx")
+	}
+
+	req := &models.CreateLinkReq{
+		UserID:           userID,
+		ShortLink:        shortLink,
+		OriginalLinkHost: u.Host,
+		OriginalLink:     u.Host + u.Path,
+	}
+
+	if err = service.linksRepo.InsertLink(ctx, req); err != nil {
 		return "", err
 	}
 
-	return "", nil
+	return shortLink, nil
 }
