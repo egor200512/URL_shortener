@@ -10,4 +10,5 @@ type ILinksRepo interface {
 	GetByShortLink(ctx context.Context, shortLink string) (*models.Link, error)
 	GetByOriginalLink(ctx context.Context, originalLink string) (*models.Link, error)
 	InsertLink(ctx context.Context, req *models.CreateLinkReq) error
+	DeleteLink(ctx context.Context, shortLink string, userID string) error
 }

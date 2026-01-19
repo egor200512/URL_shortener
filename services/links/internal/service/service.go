@@ -10,4 +10,5 @@ import (
 type ILinksService interface {
 	CreateLink(context.Context, *url.URL) (string, error)
 	GetLinkInfo(ctx context.Context, shortLink string) (*models.Link, error)
+	DeleteLink(ctx context.Context, shortLink string) error
 }

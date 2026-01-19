@@ -15,10 +15,7 @@ func (repo *linksRepo) InsertLink(ctx context.Context, req *models.CreateLinkReq
 		ORIGINAL_LINK_HOST,
 		ORIGINAL_LINK,
 	)
-	// u_id, err := uuid.Parse(user_id)
-	// if err != nil {
-	// 	return err
-	// }
+
 	if _, err := repo.pool.Exec(ctx, query, req.UserID, req.ShortLink, req.OriginalLinkHost, req.OriginalLink); err != nil {
 		return err
 	}

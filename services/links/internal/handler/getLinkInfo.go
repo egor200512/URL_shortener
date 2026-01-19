@@ -17,19 +17,19 @@ func (handler *LinksHandler) GetLinkInfo(ctx context.Context, in *desc.GetLinkIn
 
 	l, err := handler.linksService.GetLinkInfo(ctx, in.ShortLink)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Errorf("failed to get link info: %s", err.Error()).Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get link info: %s", err.Error()))
 	}
 
 	if l == nil {
-		return nil, status.Error(codes.NotFound, fmt.Errorf("link for %s doesn't exist", in.ShortLink).Error())
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("link for %s doesn't exist", in.ShortLink))
 	}
 
 	return &desc.LinkInfo{
-		Id:              l.ID.String(),
-		UserId:          l.UserID.String(),
-		ShortLink:       in.ShortLink,
-		OriginalUrlHost: l.OriginalLinkHost,
-		OriginalUrl:     l.OriginalLink,
-		CreatedAt:       timestamppb.New(l.CreatedAt.Time),
+		Id:               l.ID.String(),
+		UserId:           l.UserID.String(),
+		ShortLink:        in.ShortLink,
+		OriginalLinkHost: l.OriginalLinkHost,
+		OriginalLink:     l.OriginalLink,
+		CreatedAt:        timestamppb.New(l.CreatedAt.Time),
 	}, nil
 }
