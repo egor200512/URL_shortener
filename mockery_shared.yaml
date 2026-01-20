@@ -5,3 +5,5 @@ dir: ./shared/mocks
 pkgname: "mocks"
 packages:
   ./shared/configs: {}
+  ./shared/pkg/cache: {}
+  
