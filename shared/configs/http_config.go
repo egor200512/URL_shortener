@@ -14,7 +14,7 @@ const (
 
 type HttpConf struct {
 	host      string
-	authPort  string
+	port      string
 	linksPort string
 }
 
@@ -35,13 +35,13 @@ func NewHttpConf() (*HttpConf, error) {
 
 	return &HttpConf{
 		host:      host,
-		authPort:  authPort,
+		port:      authPort,
 		linksPort: linksPort,
 	}, nil
 }
 
 func (conf *HttpConf) AuthAddress() string {
-	return net.JoinHostPort(conf.host, conf.authPort)
+	return net.JoinHostPort(conf.host, conf.port)
 }
 
 func (conf *HttpConf) LinksAddress() string {

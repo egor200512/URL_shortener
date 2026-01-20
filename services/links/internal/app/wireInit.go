@@ -16,6 +16,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		ProvideGrpcConf,
 		ProvidePgConf,
 		ProvideJwtConf,
+		ProvideRedisConf,
 
 		ProvidePgPool,
 
@@ -26,6 +27,8 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		ProvideLinksHandler,
 
 		ProvideAuthServiceClient,
+
+		ProvideCacheCli,
 
 		wire.Struct(new(App), "*"),
 	)

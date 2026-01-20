@@ -30,11 +30,16 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		return nil, nil, err
 	}
 	iLinksRepo := ProvideLinksRepo(ctx, pool)
+	redisConf, err := ProvideRedisConf()
+	if err != nil {
+		return nil, nil, err
+	}
+	iCache := ProvideCacheCli(redisConf)
 	iJwtConf, err := ProvideJwtConf()
 	if err != nil {
 		return nil, nil, err
 	}
-	iLinksService := ProvideLinksService(iLinksRepo, iJwtConf)
+	iLinksService := ProvideLinksService(iLinksRepo, iCache, iJwtConf)
 	linksServiceServer := ProvideLinksHandler(iLinksService)
 	authServiceClient := ProvideAuthServiceClient(grpcConf)
 	app := &App{
@@ -42,6 +47,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		GrpcConf:     grpcConf,
 		LinksHandler: linksServiceServer,
 		AuthClient:   authServiceClient,
+		Cache:        iCache,
 	}
 	return app, func() {
 	}, nil
