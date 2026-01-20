@@ -64,7 +64,7 @@ message GetUserLinksRequest {
 }
 
 message GetUserLinksResponse {
-    repeated LinkInfo links = 1;
+    repeated string links = 1;
     int32 total_count = 2;
 }
 
