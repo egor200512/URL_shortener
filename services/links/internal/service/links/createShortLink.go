@@ -51,9 +51,12 @@ func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string
 		OriginalLink:     u.Host + u.Path,
 	}
 
-	if err = service.linksRepo.InsertLink(ctx, req); err != nil {
+	created, err := service.linksRepo.InsertLink(ctx, req)
+	if err != nil {
 		return "", err
 	}
+
+	_ = service.cache.SetShort(ctx, shortLink, created)
 
 	return shortLink, nil
 }

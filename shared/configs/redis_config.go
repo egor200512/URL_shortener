@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 const (
@@ -12,6 +13,7 @@ const (
 	REDIS_PORT     = "REDIS_PORT"
 	REDIS_PASSWORD = "REDIS_PASSWORD"
 	REDIS_DB       = "REDIS_DB"
+	REDIS_TTL      = "REDIS_TTL"
 )
 
 type RedisConf struct {
@@ -19,11 +21,13 @@ type RedisConf struct {
 	port     string
 	password string
 	db       int
+	ttl      time.Duration
 }
 
 func NewRedisConf() (*RedisConf, error) {
 	var host, port, password string
 	var db int
+	var ttl time.Duration
 
 	if host = os.Getenv(REDIS_HOST); len(host) == 0 {
 		return nil, errors.New("failed to get redis host")
@@ -45,11 +49,20 @@ func NewRedisConf() (*RedisConf, error) {
 		db = parsed
 	}
 
+	if ttlStr := os.Getenv(REDIS_TTL); ttlStr != "" {
+		parsed, err := time.ParseDuration(ttlStr)
+		if err != nil {
+			return nil, errors.New("failed to parse redis db as int")
+		}
+		ttl = parsed
+	}
+
 	return &RedisConf{
 		host:     host,
 		port:     port,
 		password: password,
 		db:       db,
+		ttl:      ttl,
 	}, nil
 }
 
@@ -62,5 +75,9 @@ func (conf *RedisConf) Password() string {
 }
 
 func (conf *RedisConf) DB() int {
+	return conf.db
+}
+
+func (conf *RedisConf) TTL() int {
 	return conf.db
 }

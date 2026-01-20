@@ -18,12 +18,12 @@ const (
 	CREATED_AT         = "created_at"
 )
 
-type linksRepo struct {
+type linksRepository struct {
 	pool *pgxpool.Pool
 }
 
 func NewLinksRepo(ctx context.Context, pool *pgxpool.Pool) r.ILinksRepo {
-	return &linksRepo{
+	return &linksRepository{
 		pool: pool,
 	}
 }

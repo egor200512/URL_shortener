@@ -22,7 +22,7 @@ func TestLinksService_GetUserLinks(t *testing.T) {
 		userID        string
 		limit         int32
 		offset        int32
-		setupMocks    func(*mocksR.MockILinksRepo)
+		setupMocks    func(*mocksR.MockILinksRepo, *mocksC.MockICache)
 		expectedCount int
 		expectedTotal int32
 		expectedError string
@@ -32,7 +32,7 @@ func TestLinksService_GetUserLinks(t *testing.T) {
 			userID: userID,
 			limit:  10,
 			offset: 0,
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, _ *mocksC.MockICache) {
 				mockRepo.EXPECT().GetUserLinks(
 					mock.Anything,
 					userID,
@@ -48,7 +48,7 @@ func TestLinksService_GetUserLinks(t *testing.T) {
 			userID:        "",
 			limit:         10,
 			offset:        0,
-			setupMocks:    func(*mocksR.MockILinksRepo) {},
+			setupMocks:    func(*mocksR.MockILinksRepo, *mocksC.MockICache) {},
 			expectedError: "failed to get userID from ctx",
 		},
 		{
@@ -56,7 +56,7 @@ func TestLinksService_GetUserLinks(t *testing.T) {
 			userID: userID,
 			limit:  5,
 			offset: 5,
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, _ *mocksC.MockICache) {
 				mockRepo.EXPECT().GetUserLinks(
 					mock.Anything,
 					userID,
@@ -71,10 +71,11 @@ func TestLinksService_GetUserLinks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := mocksR.NewMockILinksRepo(t)
+			mockCache := mocksC.NewMockICache(t)
 			mockJWTConfig := mocksC.NewMockIJwtConf(t)
-			tt.setupMocks(mockRepo)
+			tt.setupMocks(mockRepo, mockCache)
 
-			service := s.NewLinksService(mockRepo, mockJWTConfig)
+			service := s.NewLinksService(mockRepo, mockCache, mockJWTConfig)
 
 			ctx := context.Background()
 			if tt.userID != "" {

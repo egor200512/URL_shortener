@@ -1,6 +1,8 @@
 package redis
 
 import (
+	"time"
+
 	"github.com/egor200512/URL_shortener/shared/configs"
 	c "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	"github.com/redis/go-redis/v9"
@@ -8,6 +10,7 @@ import (
 
 type redisCli struct {
 	Cli *redis.Client
+	ttl time.Duration
 }
 
 func NewRedisCli(conf *configs.RedisConf) c.ICache {
@@ -17,5 +20,12 @@ func NewRedisCli(conf *configs.RedisConf) c.ICache {
 		DB:       conf.DB(),
 	})
 
-	return &redisCli{Cli: cli}
+	return &redisCli{
+		Cli: cli,
+		ttl: conf.TTL(),
+	}
+}
+
+func (r *redisCli) TTL() time.Duration {
+	return r.ttl
 }

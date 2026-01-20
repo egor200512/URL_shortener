@@ -12,7 +12,7 @@ type linkRow struct {
 	TotalCount   int32  `db:"total_count"`
 }
 
-func (repo *linksRepo) GetUserLinks(ctx context.Context, userID string, limit, offset int32) ([]string, int32, error) {
+func (repo *linksRepository) GetUserLinks(ctx context.Context, userID string, limit, offset int32) ([]string, int32, error) {
 	query := fmt.Sprintf(
 		`SELECT %s AS original_link, COUNT(*) OVER() AS total_count
 		FROM %s

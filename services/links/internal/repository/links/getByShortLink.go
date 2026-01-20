@@ -8,7 +8,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 )
 
-func (repo *linksRepo) GetByShortLink(ctx context.Context, shortLink string) (*models.Link, error) {
+func (repo *linksRepository) GetByShortLink(ctx context.Context, shortLink string) (*models.Link, error) {
 	query := fmt.Sprintf(`SELECT * FROM %s WHERE %s = $1`, LINKS, SHORT_LINK)
 
 	rows, err := repo.pool.Query(ctx, query, shortLink)

@@ -27,5 +27,7 @@ func (service *linksService) DeleteLink(ctx context.Context, shortLink string) e
 		return err
 	}
 
+	_ = service.cache.DelShort(ctx, shortLink)
+
 	return nil
 }

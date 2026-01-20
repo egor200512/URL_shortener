@@ -8,7 +8,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 )
 
-func (repo *linksRepo) GetByOriginalLink(ctx context.Context, originalLink string) (*models.Link, error) {
+func (repo *linksRepository) GetByOriginalLink(ctx context.Context, originalLink string) (*models.Link, error) {
 	query := fmt.Sprintf(`SELECT * FROM %s WHERE %s = $1`, LINKS, ORIGINAL_LINK)
 
 	rows, err := repo.pool.Query(ctx, query, originalLink)

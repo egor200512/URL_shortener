@@ -94,17 +94,19 @@ func TestInsertLink(t *testing.T) {
 				tt.setupDB()
 			}
 
-			err = repo.InsertLink(ctx, tt.req)
+			link, err := repo.InsertLink(ctx, tt.req)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.wantErrContains != "" {
 					assert.Contains(t, err.Error(), tt.wantErrContains)
 				}
+				assert.Nil(t, link)
 				return
 			}
 
 			assert.NoError(t, err)
+			require.NotNil(t, link)
 			if tt.verify != nil {
 				tt.verify(t, tt.req)
 			}

@@ -21,7 +21,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 		name          string
 		url           string
 		userID        string
-		setupMocks    func(*mocksR.MockILinksRepo)
+		setupMocks    func(*mocksR.MockILinksRepo, *mocksC.MockICache)
 		expectedError string
 		checkResult   func(t *testing.T, shortLink string)
 	}{
@@ -29,7 +29,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "success - new link created",
 			url:    "https://example.com/test",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				// GetByOriginalLink returns nil (link doesn't exist)
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
@@ -51,6 +51,14 @@ func TestLinksService_CreateLink(t *testing.T) {
 							req.OriginalLinkHost == "example.com" &&
 							len(req.ShortLink) == 6
 					}),
+				).Return(&models.Link{
+					ShortLink:    "abc123",
+					OriginalLink: "example.com/test",
+				}, nil).Once()
+				mockCache.EXPECT().SetShort(
+					mock.Anything,
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("*models.Link"),
 				).Return(nil).Once()
 			},
 			expectedError: "",
@@ -63,7 +71,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "error - original link already exists",
 			url:    "https://example.com/existing",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				existingLink := &models.Link{
 					ShortLink:    "abc123",
 					OriginalLink: "example.com/existing",
@@ -72,6 +80,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 					mock.Anything,
 					"example.com/existing",
 				).Return(existingLink, nil).Once()
+				mockCache.EXPECT().SetShort(mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
 			},
 			expectedError: "example.com/existing alredy exists",
 			checkResult:   nil,
@@ -80,11 +89,12 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "error - GetByOriginalLink fails",
 			url:    "https://example.com/test",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
 					"example.com/test",
 				).Return(nil, errors.New("database error")).Once()
+				mockCache.EXPECT().SetShort(mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
 			},
 			expectedError: "database error",
 			checkResult:   nil,
@@ -93,7 +103,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "error - GetByShortLink fails during collision check",
 			url:    "https://example.com/test",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
 					"example.com/test",
@@ -103,6 +113,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 					mock.Anything,
 					mock.AnythingOfType("string"),
 				).Return(nil, errors.New("database error")).Once()
+				mockCache.EXPECT().SetShort(mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
 			},
 			expectedError: "database error",
 			checkResult:   nil,
@@ -111,7 +122,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "success - handles short link collision",
 			url:    "https://example.com/test",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
 					"example.com/test",
@@ -137,6 +148,11 @@ func TestLinksService_CreateLink(t *testing.T) {
 					mock.MatchedBy(func(req *models.CreateLinkReq) bool {
 						return req.UserID == "user123"
 					}),
+				).Return(&models.Link{ShortLink: "def456"}, nil).Once()
+				mockCache.EXPECT().SetShort(
+					mock.Anything,
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("*models.Link"),
 				).Return(nil).Once()
 			},
 			expectedError: "",
@@ -148,7 +164,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "error - InsertLink fails",
 			url:    "https://example.com/test",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
 					"example.com/test",
@@ -162,7 +178,8 @@ func TestLinksService_CreateLink(t *testing.T) {
 				mockRepo.EXPECT().InsertLink(
 					mock.Anything,
 					mock.AnythingOfType("*models.CreateLinkReq"),
-				).Return(errors.New("insert failed")).Once()
+				).Return(nil, errors.New("insert failed")).Once()
+				mockCache.EXPECT().SetShort(mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
 			},
 			expectedError: "insert failed",
 			checkResult:   nil,
@@ -171,7 +188,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "error - missing userID in context",
 			url:    "https://example.com/test",
 			userID: "", // Empty userID to trigger context error
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
 					"example.com/test",
@@ -181,6 +198,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 					mock.Anything,
 					mock.AnythingOfType("string"),
 				).Return(nil, nil).Once()
+				mockCache.EXPECT().SetShort(mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
 			},
 			expectedError: "failed to get userID from ctx",
 			checkResult:   nil,
@@ -189,7 +207,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 			name:   "success - URL with query parameters (ignored)",
 			url:    "https://example.com/test?param=value",
 			userID: "user123",
-			setupMocks: func(mockRepo *mocksR.MockILinksRepo) {
+			setupMocks: func(mockRepo *mocksR.MockILinksRepo, mockCache *mocksC.MockICache) {
 				mockRepo.EXPECT().GetByOriginalLink(
 					mock.Anything,
 					"example.com/test",
@@ -205,6 +223,11 @@ func TestLinksService_CreateLink(t *testing.T) {
 					mock.MatchedBy(func(req *models.CreateLinkReq) bool {
 						return req.OriginalLink == "example.com/test"
 					}),
+				).Return(&models.Link{ShortLink: "ghi789", OriginalLink: "example.com/test"}, nil).Once()
+				mockCache.EXPECT().SetShort(
+					mock.Anything,
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("*models.Link"),
 				).Return(nil).Once()
 			},
 			expectedError: "",
@@ -218,10 +241,11 @@ func TestLinksService_CreateLink(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			mockRepo := mocksR.NewMockILinksRepo(t)
+			mockCache := mocksC.NewMockICache(t)
 			mockJWTConfig := mocksC.NewMockIJwtConf(t)
-			tt.setupMocks(mockRepo)
+			tt.setupMocks(mockRepo, mockCache)
 
-			service := s.NewLinksService(mockRepo, mockJWTConfig)
+			service := s.NewLinksService(mockRepo, mockCache, mockJWTConfig)
 
 			// Create context with userID
 			ctx := context.Background()
@@ -267,7 +291,8 @@ func TestLinksService_CreateLink_ContextValues(t *testing.T) {
 			mock.AnythingOfType("string"),
 		).Return(nil, nil).Once()
 
-		service := s.NewLinksService(mockRepo, mockJWTConfig)
+		mockCache := mocksC.NewMockICache(t)
+		service := s.NewLinksService(mockRepo, mockCache, mockJWTConfig)
 
 		// Set context value with wrong type (int instead of string)
 		ctx := context.WithValue(context.Background(), jwt.ClaimsCtxKey, 12345)
