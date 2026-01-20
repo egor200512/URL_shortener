@@ -9,11 +9,12 @@ import (
 )
 
 const (
-	REDIS_HOST     = "REDIS_HOST"
-	REDIS_PORT     = "REDIS_PORT"
-	REDIS_PASSWORD = "REDIS_PASSWORD"
-	REDIS_DB       = "REDIS_DB"
-	REDIS_TTL      = "REDIS_TTL"
+	REDIS_HOST        = "REDIS_HOST"
+	REDIS_PORT        = "REDIS_PORT"
+	REDIS_PASSWORD    = "REDIS_PASSWORD"
+	REDIS_DB          = "REDIS_DB"
+	REDIS_TTL         = "REDIS_TTL"
+	REDIS_TTL_SECONDS = "REDIS_TTL_SECONDS"
 )
 
 type RedisConf struct {
@@ -26,8 +27,7 @@ type RedisConf struct {
 
 func NewRedisConf() (*RedisConf, error) {
 	var host, port, password string
-	var db int
-	var ttl time.Duration
+	var db, ttl int
 
 	if host = os.Getenv(REDIS_HOST); len(host) == 0 {
 		return nil, errors.New("failed to get redis host")
@@ -50,11 +50,11 @@ func NewRedisConf() (*RedisConf, error) {
 	}
 
 	if ttlStr := os.Getenv(REDIS_TTL); ttlStr != "" {
-		parsed, err := time.ParseDuration(ttlStr)
+		var err error
+		ttl, err = strconv.Atoi(ttlStr)
 		if err != nil {
-			return nil, errors.New("failed to parse redis db as int")
+			return nil, errors.New("failed to parse redis ttl as time.Duration")
 		}
-		ttl = parsed
 	}
 
 	return &RedisConf{
@@ -62,7 +62,7 @@ func NewRedisConf() (*RedisConf, error) {
 		port:     port,
 		password: password,
 		db:       db,
-		ttl:      ttl,
+		ttl:      time.Duration(time.Duration(ttl).Seconds()),
 	}, nil
 }
 
@@ -78,6 +78,6 @@ func (conf *RedisConf) DB() int {
 	return conf.db
 }
 
-func (conf *RedisConf) TTL() int {
-	return conf.db
+func (conf *RedisConf) TTL() time.Duration {
+	return conf.ttl
 }
