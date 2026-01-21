@@ -37,44 +37,7 @@ services:
     volumes:
       - redis_volume:/data
 
-  
-  url_shortener_kafka:
-    image: bitnamilegacy/kafka:3.3.2-debian-11-r10
-    container_name: url_shortener_kafka
-    hostname: kafka
-    restart: unless-stopped
-    environment:
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:${KAFKA_CONTROLLER_PORT}
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_INTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},EXTERNAL://:${KAFKA_EXTERNAL_PORT}
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:${KAFKA_INTERNAL_PORT},EXTERNAL://${KAFKA_HOST}:${KAFKA_EXTERNAL_PORT}
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - ALLOW_PLAINTEXT_LISTENER=yes
-    ports:
-      - "${KAFKA_INTERNAL_PORT}:${KAFKA_INTERNAL_PORT}"
-      - "${KAFKA_EXTERNAL_PORT}:9094"
-    volumes:
-      - kafka_data:/bitnami/kafka
-
-  kafka_ui:
-    image: provectuslabs/kafka-ui:v0.7.2
-    container_name: url_shortener_kafka_ui
-    restart: unless-stopped
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=url_shortener
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:${KAFKA_INTERNAL_PORT}
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=
-    ports:
-      - "${KAFKA_UI_PORT}:8080"
-    depends_on:
-      - url_shortener_kafka
-
-
 volumes:
   url_shortener_auth_pg_volume:
   url_shortener_links_pg_volume:
   redis_volume:
-  kafka_data:

@@ -40,10 +40,6 @@ func ProvideRedisConf() (*configs.RedisConf, error) {
 	return configs.NewRedisConf()
 }
 
-func ProvideKafkaConf() (*configs.KafkaConf, error) {
-	return configs.NewKafkaConf()
-}
-
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
 	return pgxpool.Connect(ctx, cfg.LinksDSN())
 }
