@@ -98,3 +98,15 @@ delete-mocks:
 	rm -r ./shared/mocks
 	rm -r ./services/auth/internal/mocks
 	rm -r ./services/links/internal/mocks
+
+# ==========================================================================================================================
+
+tests:
+	docker compose -f docker-compose_test.yaml up -d
+	sleep 2
+	go clean -testcache
+	cd ./services/auth && go test ./...
+	cd ./services/links && go test ./...
+	docker stop url_shortener_test
+	docker rm url_shortener_test
+	
