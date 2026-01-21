@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 )
@@ -27,7 +28,9 @@ func (service *linksService) DeleteLink(ctx context.Context, shortLink string) e
 		return err
 	}
 
-	_ = service.cache.DelShort(ctx, shortLink)
+	if err := service.cache.DelShort(ctx, shortLink); err != nil {
+		log.Printf("failed to delete link from cache: %s\n", err.Error())
+	}
 
 	return nil
 }

@@ -62,7 +62,7 @@ func NewRedisConf() (*RedisConf, error) {
 		port:     port,
 		password: password,
 		db:       db,
-		ttl:      time.Duration(time.Duration(ttl).Seconds()),
+		ttl:      time.Duration(ttl * int(time.Second)),
 	}, nil
 }
 
