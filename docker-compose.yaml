@@ -39,8 +39,9 @@ services:
 
   
   url_shortener_kafka:
-    image: bitnami/kafka:3.6
+    image: bitnamilegacy/kafka:3.3.2-debian-11-r10
     container_name: url_shortener_kafka
+    hostname: kafka
     restart: unless-stopped
     environment:
       - KAFKA_CFG_NODE_ID=1
