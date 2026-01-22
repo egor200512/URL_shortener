@@ -6,6 +6,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/lpernett/godotenv v0.0.0-20230527005122-0de1d4c5ef5e
+	github.com/nats-io/nats.go v1.37.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.78.0
 )

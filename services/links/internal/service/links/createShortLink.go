@@ -2,12 +2,15 @@ package links
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/url"
+	"time"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
+	events "github.com/egor200512/URL_shortener/shared/pkg/broker/nats/events"
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 	pkg "github.com/egor200512/URL_shortener/shared/pkg/links"
 )
@@ -59,6 +62,31 @@ func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string
 
 	if err = service.cache.SetShort(ctx, shortLink, created); err != nil {
 		log.Printf("failed to cache link: %s\n", err.Error())
+	}
+
+	msg := struct {
+		UserID       string    `json:"user_id"`
+		ShortLink    string    `json:"short_link"`
+		OriginalLink string    `json:"original_link"`
+		ExecutedAt   time.Time `json:"executed_at"`
+	}{
+		UserID:       created.UserID.String(),
+		ShortLink:    created.ShortLink,
+		OriginalLink: created.OriginalLink,
+		ExecutedAt:   time.Now(),
+	}
+
+	encodedMsg, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("failed to marshal event: %s\n", err.Error())
+	} else {
+		if err = service.broker.Publish(
+			ctx,
+			events.Created(service.broker.Prefix()),
+			encodedMsg,
+		); err != nil {
+			log.Printf("failed to publish event: %s\n", err.Error())
+		}
 	}
 
 	return shortLink, nil
