@@ -30,7 +30,7 @@ type App struct {
 	grpcServer *grpc.Server `wire:"-"`
 	AuthClient descA.AuthServiceClient
 	Cache      cache.ICache
-	Broker     broker.IBroker
+	Broker     broker.IProducer
 }
 
 func NewApp(

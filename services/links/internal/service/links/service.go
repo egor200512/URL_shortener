@@ -11,14 +11,14 @@ import (
 type linksService struct {
 	linksRepo r.ILinksRepo
 	cache     cache.ICache
-	broker    broker.IBroker
+	broker    broker.IProducer
 	jwtConf   configs.IJwtConf
 }
 
 func NewLinksService(
 	authRepo r.ILinksRepo,
 	cache cache.ICache,
-	broker broker.IBroker,
+	broker broker.IProducer,
 	jwtConf configs.IJwtConf,
 ) s.ILinksService {
 	return &linksService{

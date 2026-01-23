@@ -15,7 +15,7 @@ type NatsBroker struct {
 	subject string
 }
 
-func NewNatsBroker(conf *configs.NatsConf) broker.IBroker {
+func NewNatsBroker(conf *configs.NatsConf) broker.IProducer {
 	conn, err := gonats.Connect(conf.URL())
 	if err != nil {
 		log.Fatalf("failed to create nats connection")

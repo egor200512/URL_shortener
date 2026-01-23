@@ -7,7 +7,7 @@ import (
 	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
 	descL "github.com/egor200512/URL_shortener/shared/gen/links"
 	"github.com/egor200512/URL_shortener/shared/pkg/broker"
-	"github.com/egor200512/URL_shortener/shared/pkg/broker/nats"
+	nats "github.com/egor200512/URL_shortener/shared/pkg/broker/nats/producer"
 	cache "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	red "github.com/egor200512/URL_shortener/shared/pkg/cache/redis"
 	"google.golang.org/grpc"
@@ -54,7 +54,7 @@ func ProvideLinksRepo(ctx context.Context, pool *pgxpool.Pool) lr.ILinksRepo {
 	return lri.NewLinksRepo(ctx, pool)
 }
 
-func ProvideLinksService(repo lr.ILinksRepo, cache cache.ICache, broker broker.IBroker, cfg configs.IJwtConf) ls.ILinksService {
+func ProvideLinksService(repo lr.ILinksRepo, cache cache.ICache, broker broker.IProducer, cfg configs.IJwtConf) ls.ILinksService {
 	return lsi.NewLinksService(repo, cache, broker, cfg)
 }
 
@@ -66,7 +66,7 @@ func ProvideCacheCli(cfg *configs.RedisConf) cache.ICache {
 	return red.NewRedisCli(cfg)
 }
 
-func ProvideBrokerCli(cfg *configs.NatsConf) broker.IBroker {
+func ProvideBrokerCli(cfg *configs.NatsConf) broker.IProducer {
 	return nats.NewNatsBroker(cfg)
 }
 
