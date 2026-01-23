@@ -95,6 +95,17 @@ migrations-up-links:
 migrations-down-links:
 	${LOCAL_BIN}/goose -dir ${LINKS_MIGRATION_DIR} postgres ${PG_LINKS_DSN} -table goose_version_links down -v
 
+
+migration-create-analytics:
+	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_LINKS_DSN}" \
+	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} create /analytics_table sql
+
+migrations-up-analytics:
+	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_LINKS_DSN} -table goose_version_analytics up -v
+
+migrations-down-analytics:
+	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_ANALYTICS_DSN} -table goose_version_analytics down -v
+
 # ==========================================================================================================================
 
 install-mockery:

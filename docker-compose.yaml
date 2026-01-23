@@ -27,6 +27,19 @@ services:
     volumes:
       - url_shortener_links_pg_volume:/var/lib/postgresql/data
 
+  url_shortener_analytics_pg:
+    image: postgres:17-alpine
+    container_name: url_shortener_analytics_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_NAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_ANALYTICS_PORT}:5432"
+    volumes:
+      - url_shortener_analytics_pg_volume:/var/lib/postgresql/data
+
   url_shortener_redis:
     image: redis:7-alpine
     container_name: url_shortener_redis
@@ -56,5 +69,6 @@ services:
 volumes:
   url_shortener_auth_pg_volume:
   url_shortener_links_pg_volume:
+  url_shortener_analytics_pg_volume:
   redis_volume:
   nats_js:

@@ -17,11 +17,11 @@ func main() {
 
 	a, cleanup, err := app.InitServerApp(ctx)
 	if err != nil {
-		log.Fatalf("init app: %v", err)
+		log.Fatalf("failed to init auth app: %v", err)
 	}
 	defer cleanup()
 
 	if err := a.Run(ctx); err != nil {
-		log.Fatalf("run app: %v", err)
+		log.Fatalf("failed to run auth app: %v", err)
 	}
 }
