@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package analytics;
+option go_package = "github.com/egor200512/URL_shortener/services/analytics/gen;analytics";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+enum LinkEventType {
+  LINK_EVENT_TYPE_UNSPECIFIED = 0;
+  LINK_EVENT_TYPE_CREATED     = 1;
+  LINK_EVENT_TYPE_FETCHED     = 2;
+  LINK_EVENT_TYPE_DELETED     = 3;
+}
+
+service AnalyticsService {
+  rpc ReportEvent(LinkEvent) returns (ReportEventResponse) {
+    option (google.api.http) = {
+      post: "/analytics/events"
+      body: "*"
+    };
+  }
+
+  rpc GetCounters(GetCountersRequest) returns (GetCountersResponse) {
+    option (google.api.http) = {
+      get: "/analytics/counters"
+    };
+  }
+
+  rpc Health(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      get: "/analytics/health"
+    };
+  }
+}
+
+message LinkEvent {
+  LinkEventType type = 1;
+  string user_id = 2;
+  string short_link = 3;
+  string original_link = 4;
+  google.protobuf.Timestamp occurred_at = 5;
+}
+
+message ReportEventResponse {
+  uint64 seq = 1;
+}
+
+message GetCountersRequest {
+}
+
+message Counter {
+  LinkEventType type = 1;
+  uint64 count = 2;
+}
+
+message GetCountersResponse {
+  repeated Counter counters = 1;
+}

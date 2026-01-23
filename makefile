@@ -55,6 +55,17 @@ generate-links:
 	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
 	api/links.proto
 
+generate-analytics:
+	mkdir -p shared/gen/analytics
+	protoc --proto_path api --proto_path shared/vdr \
+	--go_out=shared/gen/analytics --go_opt=paths=source_relative \
+	--plugin=protoc-gen-go=shared/bin/protoc-gen-go \
+	--go-grpc_out=shared/gen/analytics --go-grpc_opt=paths=source_relative \
+	--plugin=protoc-gen-go-grpc=shared/bin/protoc-gen-go-grpc \
+	--grpc-gateway_out=shared/gen/analytics --grpc-gateway_opt=paths=source_relative \
+	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
+	api/analytics.proto
+
 
 # ==========================================================================================================================
 
@@ -110,3 +121,6 @@ tests:
 	docker stop url_shortener_test
 	docker rm url_shortener_test
 	
+
+nats-box:
+	docker run -it --rm --network url_shortener_default natsio/nats-box:latest sh
