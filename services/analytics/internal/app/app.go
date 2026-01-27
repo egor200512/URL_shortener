@@ -135,8 +135,12 @@ func (a *App) Run(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
 		for {
-			msgs, err := a.NatsConsumer.Fetch(a.NatsConf.ConsumerBatch(), a.NatsConf.ConsumerWait())
+			ms, err := a.NatsConsumer.Fetch(
+				a.NatsConf.ConsumerBatch(),
+				a.NatsConf.ConsumerWait(),
+			)
 			if err != nil {
 				if errors.Is(err, nats.ErrTimeout) {
 					continue
@@ -144,14 +148,35 @@ func (a *App) Run(ctx context.Context) error {
 				log.Printf("nats fetch error: %v\n", err)
 				continue
 			}
-			//тут мб горутин бахнуть
-			for _, msg := range msgs {
-				if err := a.AnalyticsService.HandleMessage(ctx, msg); err != nil {
-					log.Printf("failed to handle nats message: %s\n", err.Error())
-				}
-				if err := msg.Ack(); err != nil {
-					log.Printf("failed to ack nats message: %s\n", err.Error())
-				}
+
+			const workerPoolSize = 16
+
+			pool := make(chan struct{}, workerPoolSize)
+			for range workerPoolSize {
+				pool <- struct{}{}
+			}
+
+			for _, msg := range ms {
+				<-pool
+				go func(m *nats.Msg) {
+					defer func() { pool <- struct{}{} }()
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						if err := a.AnalyticsService.HandleMessage(ctx, m); err != nil {
+							log.Printf("failed to handle nats message: %s\n", err.Error())
+							return
+						}
+						if err := m.Ack(); err != nil {
+							log.Printf("failed to ack nats message: %s\n", err.Error())
+						}
+					}
+				}(msg)
+			}
+
+			for range workerPoolSize {
+				<-pool
 			}
 		}
 	}()

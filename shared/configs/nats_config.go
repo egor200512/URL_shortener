@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	NATS_URL              = "NATS_URL"
-	NATS_HOST             = "NATS_HOST"
-	NATS_PORT             = "NATS_PORT"
-	NATS_USER             = "NATS_USER"
-	NATS_PASSWORD         = "NATS_PASSWORD"
-	NATS_PREFIX           = "NATS_PREFIX"
-	NATS_CONSUMER_NAME    = "NATS_CONSUMER_NAME"
-	NATS_CONSUMER_BATCH   = "NATS_CONSUMER_BATCH"
-	NATS_CONSUMER_WAIT_MS = "NATS_CONSUMER_WAIT_MS"
+	NATS_URL                   = "NATS_URL"
+	NATS_HOST                  = "NATS_HOST"
+	NATS_PORT                  = "NATS_PORT"
+	NATS_USER                  = "NATS_USER"
+	NATS_PASSWORD              = "NATS_PASSWORD"
+	NATS_PREFIX                = "NATS_PREFIX"
+	NATS_CONSUMER_NAME         = "NATS_CONSUMER_NAME"
+	NATS_CONSUMER_BATCH        = "NATS_CONSUMER_BATCH"
+	NATS_CONSUMER_WAIT_MINUTES = "NATS_CONSUMER_WAIT_MINUTES"
 )
 
 type NatsConf struct {
@@ -73,7 +73,7 @@ func NewNatsConf() (*NatsConf, error) {
 	}
 	batch = parsedBatch
 
-	waitStr := os.Getenv(NATS_CONSUMER_WAIT_MS)
+	waitStr := os.Getenv(NATS_CONSUMER_WAIT_MINUTES)
 	if len(waitStr) == 0 {
 		return nil, errors.New("failed to get nats consumer wait")
 	}
@@ -109,5 +109,5 @@ func (conf *NatsConf) ConsumerBatch() int {
 }
 
 func (conf *NatsConf) ConsumerWait() time.Duration {
-	return time.Duration(conf.consumerWaitMs) * time.Millisecond
+	return time.Duration(conf.consumerWaitMs) * time.Minute
 }
