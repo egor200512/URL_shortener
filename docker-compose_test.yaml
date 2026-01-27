@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  url_shortener_test:
+  url_shortener_auth_test:
     image: postgres:17-alpine
-    container_name: url_shortener_test
+    container_name: url_shortener_auth_test
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${PG_NAME}
@@ -12,7 +12,35 @@ services:
     ports:
       - "${PG_AUTH_PORT_TESTS}:5432"
     volumes:
-      - postgres_volume:/var/lib/postgresql/data
+      - auth_test_volume:/var/lib/postgresql/data
+
+  url_shortener_links_test:
+    image: postgres:17-alpine
+    container_name: url_shortener_links_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_NAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_LINKS_PORT_TESTS}:5432"
+    volumes:
+      - links_test_volume:/var/lib/postgresql/data
+
+  url_shortener_analytics_test:
+    image: postgres:17-alpine
+    container_name: url_shortener_analytics_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_NAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_ANALYTICS_PORT_TESTS}:5432"
+    volumes:
+      - analytics_test_volume:/var/lib/postgresql/data
 
 volumes:
-  postgres_volume:
+  auth_test_volume:
+  links_test_volume:
+  analytics_test_volume:
