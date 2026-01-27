@@ -101,7 +101,7 @@ migration-create-analytics:
 	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} create /analytics_table sql
 
 migrations-up-analytics:
-	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_LINKS_DSN} -table goose_version_analytics up -v
+	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_ANALYTICS_DSN} -table goose_version_analytics up -v
 
 migrations-down-analytics:
 	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_ANALYTICS_DSN} -table goose_version_analytics down -v

@@ -2,14 +2,19 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"net/http"
 	"sync"
 
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
+	"github.com/egor200512/URL_shortener/shared/pkg/broker"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/nats-io/nats.go"
 
+	"github.com/egor200512/URL_shortener/services/analytics/internal/repository"
+	"github.com/egor200512/URL_shortener/services/analytics/internal/service"
 	"github.com/egor200512/URL_shortener/shared/configs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,22 +24,34 @@ import (
 type App struct {
 	HttpConf *configs.HttpConf
 	GrpcConf *configs.GrpcConf
+	NatsConf *configs.NatsConf
 
 	AnalyticsHandler desc.AnalyticsServiceServer
+	AnalyticsService service.IAnalyticsService
+	AnalyticsRepo    repository.IAnalyticsRepo
 
-	httpServer *http.Server `wire:"-"`
-	grpcServer *grpc.Server `wire:"-"`
+	httpServer   *http.Server `wire:"-"`
+	grpcServer   *grpc.Server `wire:"-"`
+	NatsConsumer broker.IConsumer
 }
 
 func NewApp(
 	httpConf *configs.HttpConf,
 	grpcConf *configs.GrpcConf,
+	natsConf *configs.NatsConf,
 	analyticsHandler desc.AnalyticsServiceServer,
+	analyticsService service.IAnalyticsService,
+	analyticsRepo repository.IAnalyticsRepo,
+	natsConsumer broker.IConsumer,
 ) *App {
 	return &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
+		NatsConf:         natsConf,
 		AnalyticsHandler: analyticsHandler,
+		AnalyticsService: analyticsService,
+		AnalyticsRepo:    analyticsRepo,
+		NatsConsumer:     natsConsumer,
 	}
 }
 
@@ -98,8 +115,8 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
 
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if err := a.runGRPCServer(); err != nil {
@@ -107,10 +124,35 @@ func (a *App) Run(ctx context.Context) error {
 		}
 	}()
 
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if err := a.runHTTPServer(); err != nil {
 			log.Println("http error:", err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			msgs, err := a.NatsConsumer.Fetch(a.NatsConf.ConsumerBatch(), a.NatsConf.ConsumerWait())
+			if err != nil {
+				if errors.Is(err, nats.ErrTimeout) {
+					continue
+				}
+				log.Printf("nats fetch error: %v\n", err)
+				continue
+			}
+			//тут мб горутин бахнуть
+			for _, msg := range msgs {
+				if err := a.AnalyticsService.HandleMessage(ctx, msg); err != nil {
+					log.Printf("failed to handle nats message: %s\n", err.Error())
+				}
+				if err := msg.Ack(); err != nil {
+					log.Printf("failed to ack nats message: %s\n", err.Error())
+				}
+			}
 		}
 	}()
 

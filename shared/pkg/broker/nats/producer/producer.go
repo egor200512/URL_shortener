@@ -15,19 +15,19 @@ type NatsBroker struct {
 	subject string
 }
 
-func NewNatsBroker(conf *configs.NatsConf) broker.IProducer {
+func NewNatsProducer(conf *configs.NatsConf) broker.IProducer {
 	conn, err := gonats.Connect(conf.URL())
 	if err != nil {
-		log.Fatalf("failed to create nats connection")
+		log.Fatalf("failed to create nats connection: %s", err.Error())
 	}
 
 	js, err := conn.JetStream()
 	if err != nil {
-		log.Fatalf("failed to init jetstream: %v", err)
+		log.Fatalf("failed to init jetstream: %s", err.Error())
 	}
 
 	if err := ensureLinksStream(js, conf.SubjectPrefix()); err != nil {
-		log.Fatalf("failed to ensure links stream: %v", err)
+		log.Fatalf("failed to ensure links stream: %s", err.Error())
 	}
 
 	return &NatsBroker{

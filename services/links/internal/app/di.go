@@ -66,8 +66,8 @@ func ProvideCacheCli(cfg *configs.RedisConf) cache.ICache {
 	return red.NewRedisCli(cfg)
 }
 
-func ProvideBrokerCli(cfg *configs.NatsConf) broker.IProducer {
-	return nats.NewNatsBroker(cfg)
+func ProvideProducer(cfg *configs.NatsConf) broker.IProducer {
+	return nats.NewNatsProducer(cfg)
 }
 
 func ProvideAuthServiceClient(conf *configs.GrpcConf) descA.AuthServiceClient {

@@ -30,7 +30,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		ProvideAuthServiceClient,
 
 		ProvideCacheCli,
-		ProvideBrokerCli,
+		ProvideProducer,
 
 		wire.Struct(new(App), "*"),
 	)

@@ -2,6 +2,9 @@ package broker
 
 import (
 	"context"
+	"time"
+
+	gonats "github.com/nats-io/nats.go"
 )
 
 type IProducer interface {
@@ -11,7 +14,6 @@ type IProducer interface {
 }
 
 type IConsumer interface {
-	Read()
+	Fetch(batch int, wait time.Duration) ([]*gonats.Msg, error)
 	Close()
-	Prefix() string
 }
