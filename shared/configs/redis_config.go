@@ -13,8 +13,7 @@ const (
 	REDIS_PORT        = "REDIS_PORT"
 	REDIS_PASSWORD    = "REDIS_PASSWORD"
 	REDIS_DB          = "REDIS_DB"
-	REDIS_TTL         = "REDIS_TTL"
-	REDIS_TTL_SECONDS = "REDIS_TTL_SECONDS"
+	REDIS_TTL_MINUTES = "REDIS_TTL_MINUTES"
 )
 
 type RedisConf struct {
@@ -49,7 +48,7 @@ func NewRedisConf() (*RedisConf, error) {
 		db = parsed
 	}
 
-	if ttlStr := os.Getenv(REDIS_TTL); ttlStr != "" {
+	if ttlStr := os.Getenv(REDIS_TTL_MINUTES); ttlStr != "" {
 		var err error
 		ttl, err = strconv.Atoi(ttlStr)
 		if err != nil {
@@ -62,7 +61,7 @@ func NewRedisConf() (*RedisConf, error) {
 		port:     port,
 		password: password,
 		db:       db,
-		ttl:      time.Duration(ttl * int(time.Second)),
+		ttl:      time.Duration(ttl) * time.Minute,
 	}, nil
 }
 

@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	JWT_SECRET_KEY    = "JWT_SECRET_KEY"
-	JWT_ACCESS_EXPIRY = "JWT_ACCESS_EXPIRY"
+	JWT_SECRET_KEY            = "JWT_SECRET_KEY"
+	JWT_ACCESS_EXPIRY_MINUTES = "JWT_ACCESS_EXPIRY_MINUTES"
 )
 
 type IJwtConf interface {
@@ -29,7 +29,7 @@ func NewJwtConf() (IJwtConf, error) {
 		return nil, errors.New("failed to get jwt secret")
 	}
 
-	if accessExpStr = os.Getenv(JWT_ACCESS_EXPIRY); len(accessExpStr) == 0 {
+	if accessExpStr = os.Getenv(JWT_ACCESS_EXPIRY_MINUTES); len(accessExpStr) == 0 {
 		return nil, errors.New("failed to get jwt accessExp")
 	}
 
@@ -40,7 +40,7 @@ func NewJwtConf() (IJwtConf, error) {
 
 	return &jwtConf{
 		secret:    secret,
-		accessExp: time.Duration(intAccess) * time.Second,
+		accessExp: time.Duration(intAccess) * time.Minute,
 	}, nil
 }
 
