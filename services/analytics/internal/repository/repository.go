@@ -8,4 +8,5 @@ import (
 
 type IAnalyticsRepo interface {
 	InsertEvent(ctx context.Context, payload *models.LinkEvent) error
+	GetEvents(ctx context.Context, limit, offset int32) ([]*models.LinkEvent, error)
 }

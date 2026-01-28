@@ -115,11 +115,13 @@ generate-mocks:
 	${LOCAL_BIN}/mockery --config mockery_auth.yaml
 	${LOCAL_BIN}/mockery --config mockery_links.yaml
 	${LOCAL_BIN}/mockery --config mockery_shared.yaml
+	${LOCAL_BIN}/mockery --config mockery_analytics.yaml
 
 delete-mocks:
 	rm -r ./shared/mocks
 	rm -r ./services/auth/internal/mocks
 	rm -r ./services/links/internal/mocks
+	rm -r ./services/analytics/internal/mocks
 
 # ==========================================================================================================================
 
@@ -129,6 +131,7 @@ tests:
 	go clean -testcache
 	cd ./services/auth && go test ./...
 	cd ./services/links && go test ./...
+	cd ./services/analytics && go test ./...
 	docker stop url_shortener_test
 	docker rm url_shortener_test
 	

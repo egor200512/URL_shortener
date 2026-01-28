@@ -15,7 +15,7 @@ func SetupAuthTestDB(t *testing.T) *pgxpool.Pool {
 		os.Getenv("PG_USER"),
 		os.Getenv("PG_PASSWORD"),
 		os.Getenv("PG_HOST"),
-		os.Getenv("PG_AUTH_PORT_TESTS"),
+		os.Getenv("PG_PORT_TESTS"),
 		os.Getenv("PG_NAME"),
 	)
 

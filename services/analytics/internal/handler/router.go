@@ -7,11 +7,11 @@ import (
 
 type AnalyticsHandler struct {
 	desc.UnimplementedAnalyticsServiceServer
-	svc service.IAnalyticsService
+	service service.IAnalyticsService
 }
 
-func NewAnalyticsRouter(svc service.IAnalyticsService) *AnalyticsHandler {
+func NewAnalyticsRouter(service service.IAnalyticsService) *AnalyticsHandler {
 	return &AnalyticsHandler{
-		svc: svc,
+		service: service,
 	}
 }

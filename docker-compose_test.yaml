@@ -10,4 +10,4 @@ services:
       POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
     ports:
-      - "${PG_AUTH_PORT_TESTS}:5432"
+      - "${PG_PORT_TESTS}:5432"

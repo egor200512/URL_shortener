@@ -10,7 +10,7 @@ import (
 )
 
 type IAnalyticsService interface {
-	ReportEvent(ctx context.Context, req *desc.LinkEvent) (*desc.ReportEventResponse, error)
+	GetEvents(ctx context.Context, req *desc.GetEventsRequest) (*desc.GetEventsResponse, error)
 	GetCounters(ctx context.Context, req *desc.GetCountersRequest) (*desc.GetCountersResponse, error)
 	Health(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error)
 

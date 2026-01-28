@@ -15,10 +15,9 @@ enum LinkEventType {
 }
 
 service AnalyticsService {
-  rpc ReportEvent(LinkEvent) returns (ReportEventResponse) {
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {
     option (google.api.http) = {
-      post: "/analytics/events"
-      body: "*"
+      get: "/analytics/events"
     };
   }
 
@@ -43,10 +42,6 @@ message LinkEvent {
   google.protobuf.Timestamp occurred_at = 5;
 }
 
-message ReportEventResponse {
-  uint64 seq = 1;
-}
-
 message GetCountersRequest {
 }
 
@@ -57,4 +52,13 @@ message Counter {
 
 message GetCountersResponse {
   repeated Counter counters = 1;
+}
+
+message GetEventsRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetEventsResponse {
+  repeated LinkEvent events = 1;
 }
