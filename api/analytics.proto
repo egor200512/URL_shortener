@@ -21,12 +21,6 @@ service AnalyticsService {
     };
   }
 
-  rpc GetCounters(GetCountersRequest) returns (GetCountersResponse) {
-    option (google.api.http) = {
-      get: "/analytics/counters"
-    };
-  }
-
   rpc Health(google.protobuf.Empty) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       get: "/analytics/health"
@@ -43,15 +37,6 @@ message LinkEvent {
 }
 
 message GetCountersRequest {
-}
-
-message Counter {
-  LinkEventType type = 1;
-  uint64 count = 2;
-}
-
-message GetCountersResponse {
-  repeated Counter counters = 1;
 }
 
 message GetEventsRequest {
