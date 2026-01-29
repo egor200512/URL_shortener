@@ -66,6 +66,16 @@ services:
     volumes:
       - nats_js:/data/js
 
+  url_shortener_prometheus:
+    image: prom/prometheus
+    container_name: url_shortener_prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
+    # depends_on: [analytics]
+
+
 volumes:
   url_shortener_auth_pg_volume:
   url_shortener_links_pg_volume:

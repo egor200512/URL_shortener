@@ -32,6 +32,14 @@ func ProvideNatsConf() (*configs.NatsConf, error) {
 	return configs.NewNatsConf()
 }
 
+func ProvidePrometheusConf() (*configs.PrometheusConf, error) {
+	return configs.NewPrometheusConf()
+}
+
+func ProvideMetricsConf() (*configs.MetricsConf, error) {
+	return configs.NewMetricsConf()
+}
+
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
 	return pgxpool.Connect(ctx, cfg.AnalyticsDSN())
 }

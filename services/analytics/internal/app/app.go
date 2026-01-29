@@ -10,21 +10,26 @@ import (
 
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
 	"github.com/egor200512/URL_shortener/shared/pkg/broker"
+	grpcprom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/nats-io/nats.go"
 
 	"github.com/egor200512/URL_shortener/services/analytics/internal/repository"
 	"github.com/egor200512/URL_shortener/services/analytics/internal/service"
 	"github.com/egor200512/URL_shortener/shared/configs"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
 type App struct {
-	HttpConf *configs.HttpConf
-	GrpcConf *configs.GrpcConf
-	NatsConf *configs.NatsConf
+	HttpConf       *configs.HttpConf
+	GrpcConf       *configs.GrpcConf
+	NatsConf       *configs.NatsConf
+	PrometheusConf *configs.PrometheusConf
+	MetricsConf    *configs.MetricsConf
 
 	AnalyticsHandler desc.AnalyticsServiceServer
 	AnalyticsService service.IAnalyticsService
@@ -39,6 +44,8 @@ func NewApp(
 	httpConf *configs.HttpConf,
 	grpcConf *configs.GrpcConf,
 	natsConf *configs.NatsConf,
+	prometheusConf *configs.PrometheusConf,
+	metricsConf *configs.MetricsConf,
 	analyticsHandler desc.AnalyticsServiceServer,
 	analyticsService service.IAnalyticsService,
 	analyticsRepo repository.IAnalyticsRepo,
@@ -48,6 +55,8 @@ func NewApp(
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
 		NatsConf:         natsConf,
+		PrometheusConf:   prometheusConf,
+		MetricsConf:      metricsConf,
 		AnalyticsHandler: analyticsHandler,
 		AnalyticsService: analyticsService,
 		AnalyticsRepo:    analyticsRepo,
@@ -58,7 +67,11 @@ func NewApp(
 func (a *App) initGRPCServer(_ context.Context) error {
 	a.grpcServer = grpc.NewServer(
 		grpc.Creds(insecure.NewCredentials()),
+		grpc.ChainUnaryInterceptor(grpcprom.UnaryServerInterceptor),
+		grpc.ChainStreamInterceptor(grpcprom.StreamServerInterceptor),
 	)
+	grpcprom.Register(a.grpcServer)
+	grpcprom.EnableHandlingTimeHistogram()
 	reflection.Register(a.grpcServer)
 	desc.RegisterAnalyticsServiceServer(a.grpcServer, a.AnalyticsHandler)
 	return nil
@@ -84,6 +97,13 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) runMetricsServer() error {
+	metricsAddr := a.MetricsConf.AnalyticsAddress()
+
+	log.Printf("Metrics server is running on %s\n", metricsAddr)
+	return http.ListenAndServe(metricsAddr, promhttp.Handler())
+}
+
 func (a *App) runGRPCServer() error {
 	grpcAddr := a.GrpcConf.AnalyticsAddress()
 	log.Printf("GRPC server is running on %s\n", grpcAddr)
@@ -91,19 +111,14 @@ func (a *App) runGRPCServer() error {
 	if err != nil {
 		return err
 	}
-	if err = a.grpcServer.Serve(lis); err != nil {
-		return err
-	}
-	return nil
+	return a.grpcServer.Serve(lis)
 }
 
 func (a *App) runHTTPServer() error {
 	httpAddr := a.HttpConf.AnalyticsAddress()
 	log.Printf("HTTP server is running on %s\n", httpAddr)
-	if err := a.httpServer.ListenAndServe(); err != nil {
-		return err
-	}
-	return nil
+
+	return a.httpServer.ListenAndServe()
 }
 
 func (a *App) Run(ctx context.Context) error {
@@ -115,6 +130,14 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := a.runMetricsServer(); err != nil {
+			log.Println("metrics error:", err)
+		}
+	}()
 
 	wg.Add(1)
 	go func() {

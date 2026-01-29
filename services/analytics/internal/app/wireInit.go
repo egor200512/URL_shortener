@@ -16,6 +16,8 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		ProvideGrpcConf,
 		ProvidePgConf,
 		ProvideNatsConf,
+		ProvidePrometheusConf,
+		ProvideMetricsConf,
 
 		ProvidePgPool,
 
