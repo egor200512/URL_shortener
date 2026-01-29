@@ -26,12 +26,6 @@ service AnalyticsService {
       get: "/analytics/health"
     };
   }
-
-  rpc Metrics(google.protobuf.Empty) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      get: "/metrics"
-    };
-  }
 }
 
 message LinkEvent {
