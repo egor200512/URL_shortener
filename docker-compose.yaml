@@ -77,6 +77,20 @@ services:
       - "host.docker.internal:host-gateway"
     # depends_on: [analytics]
 
+  url_shortener_grafana:
+    image: grafana/grafana:10.4.3
+    container_name: url_shortener_grafana
+    depends_on:
+      - url_shortener_prometheus
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "user"
+      GF_SECURITY_ADMIN_PASSWORD: "pass"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deploy/grafana_user/provisioning:/etc/grafana/provisioning
+
 
 volumes:
   url_shortener_auth_pg_volume:
@@ -84,3 +98,4 @@ volumes:
   url_shortener_analytics_pg_volume:
   redis_volume:
   nats_js:
+  grafana_data:

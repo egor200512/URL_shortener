@@ -1,0 +1,87 @@
+{
+  "title": "Analytics Overview",
+  "uid": "analytics-overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["analytics", "prometheus"],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "gRPC RPS (GetEvents)",
+      "targets": [
+        {
+          "expr": "rate(grpc_server_started_total{grpc_service=\"analytics.AnalyticsService\",grpc_method=\"GetEvents\"}[5m])",
+          "legendFormat": "GetEvents"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 4}
+    },
+    {
+      "type": "stat",
+      "title": "gRPC p95 latency (GetEvents)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{grpc_service=\"analytics.AnalyticsService\",grpc_method=\"GetEvents\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 4}
+    },
+    {
+      "type": "graph",
+      "title": "gRPC Throughput (all methods)",
+      "targets": [
+        {
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"analytics.AnalyticsService\"}[5m])) by (grpc_method)",
+          "legendFormat": "{{grpc_method}}"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8}
+    },
+    {
+      "type": "graph",
+      "title": "gRPC Errors by code",
+      "targets": [
+        {
+          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"analytics.AnalyticsService\",grpc_code!=\"OK\"}[5m])) by (grpc_method, grpc_code)",
+          "legendFormat": "{{grpc_method}} {{grpc_code}}"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8}
+    },
+    {
+      "type": "graph",
+      "title": "Go runtime: goroutines",
+      "targets": [
+        {
+          "expr": "go_goroutines",
+          "legendFormat": "goroutines"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 12, "w": 8, "h": 6}
+    },
+    {
+      "type": "graph",
+      "title": "Process RSS",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "rss"
+        }
+      ],
+      "gridPos": {"x": 8, "y": 12, "w": 8, "h": 6}
+    },
+    {
+      "type": "graph",
+      "title": "CPU seconds",
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total[5m])",
+          "legendFormat": "cpu"
+        }
+      ],
+      "gridPos": {"x": 16, "y": 12, "w": 8, "h": 6}
+    }
+  ]
+}

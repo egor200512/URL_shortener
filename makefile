@@ -74,6 +74,16 @@ install-goose:
 
 # ==========================================================================================================================
 
+migrations-up:
+	make migrations-up-auth
+	make migrations-up-links
+	make migrations-up-analytics
+
+migrations-down:
+	make migrations-down-auth
+	make migrations-down-links
+	make migrations-down-analytics
+
 migration-create-auth:
 	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_AUTH_DSN}" \
 	${LOCAL_BIN}/goose -dir ${AUTH_MIGRATION_DIR} create auth_table sql

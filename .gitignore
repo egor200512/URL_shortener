@@ -9,3 +9,5 @@ services/links/internal/mocks
 services/analytics/internal/mocks
 
 requirements.md
+
+hit.sh
