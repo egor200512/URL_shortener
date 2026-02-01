@@ -8,25 +8,69 @@
   "panels": [
     {
       "type": "stat",
-      "title": "gRPC RPS (GetEvents)",
+      "title": "Links Create per minute",
       "targets": [
         {
-          "expr": "rate(grpc_server_started_total{grpc_service=\"analytics.AnalyticsService\",grpc_method=\"GetEvents\"}[5m])",
-          "legendFormat": "GetEvents"
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"links.LinksService\",grpc_method=\"CreateLink\"}[1m]))",
+          "legendFormat": "CreateLink"
         }
       ],
-      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 4}
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4}
     },
     {
       "type": "stat",
-      "title": "gRPC p95 latency (GetEvents)",
+      "title": "Links GetOriginal per minute",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{grpc_service=\"analytics.AnalyticsService\",grpc_method=\"GetEvents\"}[5m])) by (le))",
-          "legendFormat": "p95"
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"links.LinksService\",grpc_method=\"GetOriginalLink\"}[1m]))",
+          "legendFormat": "GetOriginalLink"
         }
       ],
-      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 4}
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4}
+    },
+    {
+      "type": "stat",
+      "title": "Links GetInfo per minute",
+      "targets": [
+        {
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"links.LinksService\",grpc_method=\"GetLinkInfo\"}[1m]))",
+          "legendFormat": "GetLinkInfo"
+        }
+      ],
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4}
+    },
+    {
+      "type": "graph",
+      "title": "Go runtime: goroutines",
+      "targets": [
+        {
+          "expr": "go_goroutines{job=\"analytics\"}",
+          "legendFormat": "goroutines"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 6}
+    },
+    {
+      "type": "graph",
+      "title": "Process RSS",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"analytics\"}",
+          "legendFormat": "rss"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6}
+    },
+    {
+      "type": "graph",
+      "title": "CPU seconds",
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total{job=\"analytics\"}[5m])",
+          "legendFormat": "cpu"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 6}
     },
     {
       "type": "graph",
@@ -37,51 +81,7 @@
           "legendFormat": "{{grpc_method}}"
         }
       ],
-      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8}
-    },
-    {
-      "type": "graph",
-      "title": "gRPC Errors by code",
-      "targets": [
-        {
-          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"analytics.AnalyticsService\",grpc_code!=\"OK\"}[5m])) by (grpc_method, grpc_code)",
-          "legendFormat": "{{grpc_method}} {{grpc_code}}"
-        }
-      ],
-      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8}
-    },
-    {
-      "type": "graph",
-      "title": "Go runtime: goroutines",
-      "targets": [
-        {
-          "expr": "go_goroutines",
-          "legendFormat": "goroutines"
-        }
-      ],
-      "gridPos": {"x": 0, "y": 12, "w": 8, "h": 6}
-    },
-    {
-      "type": "graph",
-      "title": "Process RSS",
-      "targets": [
-        {
-          "expr": "process_resident_memory_bytes",
-          "legendFormat": "rss"
-        }
-      ],
-      "gridPos": {"x": 8, "y": 12, "w": 8, "h": 6}
-    },
-    {
-      "type": "graph",
-      "title": "CPU seconds",
-      "targets": [
-        {
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "cpu"
-        }
-      ],
-      "gridPos": {"x": 16, "y": 12, "w": 8, "h": 6}
+      "gridPos": {"x": 0, "y": 10, "w": 12, "h": 6}
     }
   ]
 }
