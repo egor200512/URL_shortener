@@ -148,3 +148,14 @@ tests:
 
 nats-box:
 	docker run -it --rm --network url_shortener_default natsio/nats-box:latest sh
+
+cock:
+	docker stop $$(docker ps -aq)
+	docker rm $$(docker ps -aq)
+	docker volume rm $$(docker volume ls -q)
+	docker compose up -d
+	sleep 3
+	make migrations-up
+	
+	
+	

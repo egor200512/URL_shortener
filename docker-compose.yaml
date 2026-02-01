@@ -89,7 +89,8 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: "pass"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./deploy/grafana_user/provisioning:/etc/grafana/provisioning
+      - ./deploy/grafana_user/datasources:/etc/grafana/provisioning/datasources
+      - ./deploy/grafana_user/dashboards:/etc/grafana/provisioning/dashboards
 
 
 volumes:
