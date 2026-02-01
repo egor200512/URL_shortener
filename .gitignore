@@ -8,6 +8,4 @@ services/auth/internal/mocks
 services/links/internal/mocks
 services/analytics/internal/mocks
 
-requirements.md
-
 hit.sh
