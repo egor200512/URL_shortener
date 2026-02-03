@@ -8,33 +8,33 @@
   "panels": [
     {
       "type": "stat",
-      "title": "Links Create per minute",
+      "title": "Links Create per second",
       "targets": [
         {
-          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"links.LinksService\",grpc_method=\"CreateLink\"}[1m]))",
-          "legendFormat": "CreateLink"
+          "expr": "events_per_second_events_per_second{event_type=\"created\"}",
+          "legendFormat": "created"
         }
       ],
       "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4}
     },
     {
       "type": "stat",
-      "title": "Links GetOriginal per minute",
+      "title": "Links GetOriginal per second",
       "targets": [
         {
-          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"links.LinksService\",grpc_method=\"GetOriginalLink\"}[1m]))",
-          "legendFormat": "GetOriginalLink"
+          "expr": "events_per_second_events_per_second{event_type=\"fetched\"}",
+          "legendFormat": "fetched"
         }
       ],
       "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4}
     },
     {
       "type": "stat",
-      "title": "Links GetInfo per minute",
+      "title": "Links GetInfo per second",
       "targets": [
         {
-          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"links.LinksService\",grpc_method=\"GetLinkInfo\"}[1m]))",
-          "legendFormat": "GetLinkInfo"
+          "expr": "events_per_second_events_per_second{event_type=\"deleted\"}",
+          "legendFormat": "deleted"
         }
       ],
       "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4}
