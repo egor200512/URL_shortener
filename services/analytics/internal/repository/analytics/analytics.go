@@ -7,6 +7,16 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+const (
+	EVENTS        = "analytics.link_events"
+	ID            = "id"
+	EVENT_TYPE    = "event_type"
+	USER_ID       = "user_id"
+	SHORT_LINK    = "short_link"
+	ORIGINAL_LINK = "original_link"
+	EXECUTED_AT   = "executed_at"
+)
+
 type analyticsRepository struct {
 	pool *pgxpool.Pool
 }

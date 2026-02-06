@@ -92,17 +92,6 @@ services:
       - ./deploy/grafana_user/datasources:/etc/grafana/provisioning/datasources
       - ./deploy/grafana_user/dashboards:/etc/grafana/provisioning/dashboards
 
-  url_shortener_links_pg_exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter
-    container_name: url_shortener_links_pg_exporter
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${PG_USER}:${PG_PASSWORD}@url_shortener_links_pg:5432/${PG_NAME}?sslmode=disable"
-      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
-    volumes:
-      - ./deploy/postgres_exporter_user_rw/queries_links.yaml:/etc/postgres_exporter/queries.yaml
-    depends_on:
-      - url_shortener_links_pg
-
   url_shortener_analytics_pg_exporter:
     image: quay.io/prometheuscommunity/postgres-exporter
     container_name: url_shortener_analytics_pg_exporter
