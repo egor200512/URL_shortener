@@ -71,7 +71,7 @@ func ProvideProducer(cfg *configs.NatsConf) broker.IProducer {
 }
 
 func ProvideAuthServiceClient(conf *configs.GrpcConf) descA.AuthServiceClient {
-	conn, err := grpc.NewClient(conf.AuthAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(conf.AuthDockerAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to create auth client: %s", err.Error())
 	}
