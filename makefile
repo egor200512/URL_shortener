@@ -33,6 +33,11 @@ get-annotation:
 
 # ==========================================================================================================================
 
+generate-services:
+	make generate-auth
+	make generate-links
+	make generate-analytics
+
 generate-auth:
 	mkdir -p shared/gen/auth
 	protoc --proto_path api --proto_path shared/vdr \
@@ -157,5 +162,11 @@ cock:
 	sleep 3
 	make migrations-up
 	
-	
-	
+app-setup:
+	make install-all
+	make get-annotation
+	make generate-services
+	make generate-mocks
+	make tests
+	clear
+	@echo "\033[32m✅ Setup done\033[0m"

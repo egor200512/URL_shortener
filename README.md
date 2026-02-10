@@ -1,6 +1,6 @@
 # URL Shortener
 
-URL Shortener — микросервисное приложение для создания и отслеживания коротких ссылок с готовой наблюдаемостью. Логика разнесена на три микросервиса:
+URL Shortener — production-ready микросервисное приложение для быстрого создания и детальной аналитики коротких ссылок. Логика разнесена на три микросервиса:
 
 - **Auth** — выдаёт JWT и управляет пользователями.  
 - **Links** — создаёт/хранит/отдаёт короткие ссылки, кэширует в Redis, шлёт события в NATS.  
@@ -9,8 +9,8 @@ URL Shortener — микросервисное приложение для со�
 Из коробки настроены Prometheus и Grafana, есть gRPC и REST, миграции и DI через Wire.
 
 ## Технологический стек
-- **Язык**: Go 1.25.x  
-- **БД**: PostgreSQL (отдельно для auth, links, analytics)  
+- **Язык**: Go 1.25.6 
+- **БД**: PostgreSQL  
 - **Кэш/Очередь**: Redis, NATS (JetStream)  
 - **API**: gRPC + gRPC Gateway (REST)  
 - **Аутентификация**: JWT  
@@ -36,8 +36,8 @@ URL Shortener — микросервисное приложение для со�
 │   └── analytics/           # Analytics сервис
 ├── shared/                  # общие пакеты (broker, configs, models, mocks)
 ├── deploy/
-│   ├── prometheus.yml
-│   ├── grafana_user/        # datasources + dashboards (analytics-overview.json)
+│   ├── prometheus.yml       # конфиг Prometheus
+│   ├── grafana_user/        # datasources + dashboards
 │   └── postgres_exporter_user_rw/
 │       └── queries_analytics.yaml   # кастомные метрики для analytics DB
 ├── docker-compose.yaml      # dev окружение
@@ -47,7 +47,7 @@ URL Shortener — микросервисное приложение для со�
 
 ## Быстрый старт
 ### Предварительные требования
-https://github.com/egor200512/URL_shortener.git
+
 - Go 1.25.6+
 - Docker + Docker Compose
 - Make
@@ -56,62 +56,64 @@ https://github.com/egor200512/URL_shortener.git
 
 1. Клонируйте репозиторий:
 ```sh
-git clone https://github.com/egor200512/PassVault.git
+git clone https://github.com/egor200512/URL_shortener.git
 ```
 
 2. Перейдите в папку проекта:
 ```sh
-cd PassVault
+cd URL_shortener
 ```
 
 3. Создайте `.env` файл с переменными окружения:
 ```sh
 # GRPC
-GRPC_HOST=localhost
+GRPC_HOST=0.0.0.0
 GRPC_AUTH_PORT=8080 # можно настроить
 GRPC_LINKS_PORT=8081 # можно настроить
 GRPC_ANALYTICS_PORT=8082 # можно настроить
+GRPC_AUTH_DOCKER_HOST=url_shortener_auth
 
 # HTTP
-HTTP_HOST=localhost
+HTTP_HOST=0.0.0.0
 HTTP_AUTH_PORT=8083 # можно настроить
 HTTP_LINKS_PORT=8084 # можно настроить
 HTTP_ANALYTICS_PORT=8085 # можно настроить
 
 # PostgreSQL
-PG_HOST=localhost
+PG_AUTH_HOST=url_shortener_auth_pg
+PG_LINKS_HOST=url_shortener_links_pg
+PG_ANALYTICS_HOST=url_shortener_analytics_pg
+PG_TESTS_HOST=0.0.0.0
 PG_NAME=user # можно настроить
-PG_USER=user # можно настроить 
+PG_USER=user # можно настроить
 PG_PASSWORD=pass # можно настроить
 
-PG_AUTH_PORT=5432 # можно настроить
-PG_LINKS_PORT=5433 # можно настроить
-PG_ANALYTICS_PORT=5434 # можно настроить
+PG_DOCKER_PORT=5432 
 
-PG_AUTH_DSN="host=${PG_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_AUTH_PORT}"
-PG_LINKS_DSN="host=${PG_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_LINKS_PORT}"
-PG_ANALYTICS_DSN="host=${PG_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_ANALYTICS_PORT}"
+PG_AUTH_DSN="host=${PG_AUTH_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_DOCKER_PORT}"
+PG_LINKS_DSN="host=${PG_LINKS_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_DOCKER_PORT}"
+PG_ANALYTICS_DSN="host=${PG_ANALYTICS_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_DOCKER_PORT}"
 
 # PostgreSQL Tests
 PG_PORT_TESTS=5435 # можно настроить
 
 # Redis
-REDIS_HOST=localhost
+REDIS_HOST=url_shortener_redis
 REDIS_PORT=6379 # можно настроить
-REDIS_PASSWORD=red_pass # можно настроить
+REDIS_PASSWORD=red_pass
 REDIS_DB=0
-REDIS_TTL_MINUTES=600 # можно настроить
+REDIS_TTL_MINUTES=600
 
 # NATS
-NATS_HOST=localhost
+NATS_HOST=url_shortener_nats
 NATS_PORT=4222 # можно настроить
 NATS_USER=nats_user # можно настроить
 NATS_PASSWORD=nats_pass # можно настроить
 NATS_URL="nats://${NATS_USER}:${NATS_PASSWORD}@${NATS_HOST}:${NATS_PORT}"
-NATS_PREFIX=links
+NATS_PREFIX=links 
 NATS_CONSUMER_NAME="analytics_consumer"
 NATS_CONSUMER_BATCH=100
-NATS_CONSUMER_WAIT_MINUTES=5 # можно настроить
+NATS_CONSUMER_WAIT_MINUTES=5
 
 # Migrations
 AUTH_MIGRATION_DIR=./services/auth/migrations
@@ -120,19 +122,20 @@ ANALYTICS_MIGRATION_DIR=./services/analytics/migrations
 
 # JWT
 JWT_SECRET_KEY="jwt_secret_key"  # добавьте свой ключ (HS256)
-JWT_ACCESS_EXPIRY_MINUTES=60 # можно настроить
+JWT_ACCESS_EXPIRY_MINUTES=60
 
 # PROMETHEUS
-PROMETHEUS_HOST=localhost
+PROMETHEUS_HOST=0.0.0.0
 PROMETHEUS_PORT=9090 # можно настроить
 
 # GRAFANA
-GRAFANA_HOST=localhost
+GRAFANA_HOST=0.0.0.0
 GRAFANA_PORT=3000 # можно настроить
 
 # METRICS
 METRICS_HOST=0.0.0.0   
 METRICS_ANALYTICS_PORT=9099 # можно настроить
+
 ```
 Для первого запуска можно просто скопировать и добавить свой `JWT_SECRET_KEY`. 
 
@@ -149,34 +152,4 @@ make app-setup
 docker compose up --build
 ```
 
-
-
 ## Наблюдаемость
-- Prometheus скрейпит:
-  - сервис `analytics` (`/metrics` на `METRICS_ANALYTICS_PORT`)
-  - `analytics_pg_exporter` (метрика `events_per_minute` по типам событий).
-- Grafana: дашборд `deploy/grafana_user/dashboards/json/analytics-overview.json` (RPS/latency событий, runtime метрики).
-
-## Тестирование
-- `go test ./...` — юнит/интеграционные тесты.
-- Моки: `mockery` (конфиги в `mockery_*.yaml`).
-
-## Работа ссылочного сервиса
-- Создание короткой ссылки: запись в Postgres, кэш в Redis, событие `created` в NATS.
-- Получение оригинала: чтение из Redis (фоллбек Postgres), событие `fetched`.
-- Удаление/истечение: событие `deleted`.
-
-## Работа аналитики
-- Консьюмит события из NATS, пишет в `analytics.link_events`.
-- Репозиторий `InsertEvent`/`GetEvents` отдаёт историю, exporter считает `events_per_minute` по типам событий для Grafana.
-
-## Makefile (основные цели)
-- `make app-setup` — deps + генерация + миграции.
-- `make test` — `go test ./...`.
-- `make migrations-up-<service>` — накатывает миграции выбранного сервиса.
-- `make cock` — полная перезагрузка контейнеров (осторожно, чистит volumes).
-
-## Перед релизом
-- Прогоните `go test ./...` локально.
-- Убедитесь, что в `docker-compose.yaml` не остался неиспользуемый `url_shortener_links_pg_exporter`.
-- В Grafana нет панелей на несуществующие метрики.
