@@ -9,3 +9,4 @@ services/links/internal/mocks
 services/analytics/internal/mocks
 
 hit.sh
+readme_example.md

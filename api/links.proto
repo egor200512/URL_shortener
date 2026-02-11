@@ -39,7 +39,6 @@ service LinksService {
             delete: "/links/{short_link}"
         };
     }
-
 }
 
 message CreateLinkRequest {

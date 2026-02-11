@@ -25,6 +25,7 @@ URL Shortener — production-ready микросервисное приложен
 - Analytics‑сервис собирает события (created/fetched/deleted) через NATS и отдаёт агрегированные данные.
 - Метрики Prometheus + готовый Grafana дашборд; Postgres‑exporter для аналитической БД.
 - gRPC + REST (через gRPC‑Gateway) для всех сервисов.
+- Все слои (handler, service, repo) сервисных endpoint'ов покрыты unit-тестами
 
 ## Структура проекта
 ```sh
@@ -147,9 +148,101 @@ make app-setup
 
 ### Запуск сервера
 
-
 ```sh
 docker compose up --build
 ```
 
-## Наблюдаемость
+## Тесты
+Запустить unit‑тесты можно следующей командой: 
+```sh
+make tests
+```
+
+## Серверная часть
+### Серверная часть состоит из трёх микросервисов.<br>
+
+- **Auth** хранит пользователей в своей БД, выдаёт/проверяет JWT.
+- **Links** пишет короткие ссылки в свою БД, кэширует их в Redis, публикует события в NATS.
+- **Analytics** подписывается на NATS, складывает события в свою БД, считает агрегаты и отдаёт их через gRPC/REST и `/metrics`.
+
+Cервисы общаются по gRPC; REST добавлерн через gRPC‑Gateway.
+
+### Данные приложения хранятся в трёх независимых таблицах.
+```sql
+CREATE TABLE auth.users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(100) UNIQUE NOT NULL,
+    salt BYTEA NOT NULL,
+    salt_password_hash BYTEA NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+```sql
+CREATE TABLE links.short_links (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    short_link VARCHAR(10) UNIQUE NOT NULL,
+    original_link_host TEXT NOT NULL,
+    original_link TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+```sql
+CREATE TABLE analytics.link_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_type TEXT NOT NULL CHECK (event_type IN ('created', 'fetched', 'deleted')),
+    user_id UUID NOT NULL,
+    short_link VARCHAR(10) NOT NULL,
+    original_link TEXT NOT NULL,
+    executed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## Основные ручки (REST/gRPC)
+
+```proto
+// Auth
+service AuthService {
+    // Принимает email/пароль, сохранаяет юзера в auth.users
+    rpc Register (RegisterRequest) returns (google.protobuf.Empty);
+    // Проверяет креды, возвращает JWT access_token
+    rpc Login (LoginRequest) returns (LoginResponse);
+    // Проверяет валидность токена (используется сервисами)
+    rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
+}
+
+// Links
+service LinksService {
+    // Создаёт короткую ссылку, сохраняет в links.short_links, отправляет событие "created" в NATS
+    rpc CreateLink (CreateLinkRequest) returns (CreateLinkResponse);
+    // Отдает оригинал по slug, публикует событие "fetched"
+    rpc GetOriginalLink (GetOriginalLinkRequest) returns (GetOriginalLinkResponse);
+    // Получает все ссылки пользователя
+    rpc GetUserLinks (GetUserLinksRequest) returns (GetUserLinksResponse);
+    // Возвращает метаданные по ссылке
+    rpc GetLinkInfo (GetLinkInfoRequest) returns (LinkInfo);
+    // Удаляет ссылку, отправляет событие "deleted"
+    rpc DeleteLink (DeleteLinkRequest) returns (google.protobuf.Empty);
+}
+
+// Analytics
+service AnalyticsService {
+  // Возвращает события/агрегаты из analytics.link_events
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);
+  // Healthcheck
+  rpc Health(google.protobuf.Empty) returns (google.protobuf.Empty);
+  // Проксирует promhttp /metrics (для Prometheus)
+  rpc Metrics(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+```
+
+## Зависимости
+- `google.golang.org/grpc`, `github.com/grpc-ecosystem/grpc-gateway/v2` — gRPC + REST Gateway.
+- `github.com/jackc/pgx/v4`, `github.com/georgysavva/scany` — драйвер и маппинг PostgreSQL.
+- `github.com/nats-io/nats.go` — событийная шина (Links публикует, Analytics подписывается).
+- `github.com/redis/go-redis/v9` — кэширование коротких ссылок в Links.
+- `github.com/prometheus/client_golang`, `github.com/grpc-ecosystem/go-grpc-prometheus` — метрики сервисов и gRPC.
+- `github.com/google/wire` — DI.
+- `github.com/pressly/goose/v3` — миграции.
+- `github.com/stretchr/testify`, `github.com/vektra/mockery/v3` — тестирование и генерация моков.
+
