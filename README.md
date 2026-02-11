@@ -165,7 +165,7 @@ make tests
 - **Links** пишет короткие ссылки в свою БД, кэширует их в Redis, публикует события в NATS.
 - **Analytics** подписывается на NATS, складывает события в свою БД, считает агрегаты и отдаёт их через gRPC/REST и `/metrics`.
 
-Cервисы общаются по gRPC; REST добавлерн через gRPC‑Gateway.
+Сервисы общаются по gRPC; REST добавлен через gRPC‑Gateway.
 
 ### Данные приложения хранятся в трёх независимых таблицах.
 ```sql
@@ -245,4 +245,3 @@ service AnalyticsService {
 - `github.com/google/wire` — DI.
 - `github.com/pressly/goose/v3` — миграции.
 - `github.com/stretchr/testify`, `github.com/vektra/mockery/v3` — тестирование и генерация моков.
-
