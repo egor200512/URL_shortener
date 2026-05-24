@@ -32,7 +32,7 @@ get-annotation:
 	git clone https://github.com/googleapis/googleapis.git shared/vdr/googletmp &&\
 	mkdir -p shared/vdr &&\
 	mv shared/vdr/googletmp/google shared/vdr &&\
-	rm -rf shared/vdr/googletmp;\
+	rm -rf shared/vdr/googletmp;\	
 
 # ==========================================================================================================================
 
@@ -75,7 +75,7 @@ generate-links:
 # ==========================================================================================================================
 
 install-goose:
-	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.26.0
+	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.27.1
 
 # ==========================================================================================================================
 
