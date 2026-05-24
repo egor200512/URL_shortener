@@ -35,7 +35,6 @@ get-annotation:
 generate-services:
 	make generate-auth
 	make generate-links
-	make generate-analytics
 
 generate-auth:
 	mkdir -p shared/gen/auth
@@ -59,18 +58,6 @@ generate-links:
 	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
 	api/links.proto
 
-generate-analytics:
-	mkdir -p shared/gen/analytics
-	protoc --proto_path api --proto_path shared/vdr \
-	--go_out=shared/gen/analytics --go_opt=paths=source_relative \
-	--plugin=protoc-gen-go=shared/bin/protoc-gen-go \
-	--go-grpc_out=shared/gen/analytics --go-grpc_opt=paths=source_relative \
-	--plugin=protoc-gen-go-grpc=shared/bin/protoc-gen-go-grpc \
-	--grpc-gateway_out=shared/gen/analytics --grpc-gateway_opt=paths=source_relative \
-	--plugin=protoc-gen-grpc-gateway=shared/bin/protoc-gen-grpc-gateway \
-	api/analytics.proto
-
-
 # ==========================================================================================================================
 
 install-goose:
@@ -81,12 +68,10 @@ install-goose:
 migrations-up:
 	make migrations-up-auth
 	make migrations-up-links
-	make migrations-up-analytics
 
 migrations-down:
 	make migrations-down-auth
 	make migrations-down-links
-	make migrations-down-analytics
 
 migration-create-auth:
 	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_AUTH_DSN}" \
@@ -109,16 +94,6 @@ migrations-up-links:
 migrations-down-links:
 	${LOCAL_BIN}/goose -dir ${LINKS_MIGRATION_DIR} postgres ${PG_LINKS_DSN} -table goose_version_links down -v
 
-
-migration-create-analytics:
-	GOOSE_DRIVER=postgres GOOSE_DBSTRING="${PG_LINKS_DSN}" \
-	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} create /analytics_table sql
-
-migrations-up-analytics:
-	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_ANALYTICS_DSN} -table goose_version_analytics up -v
-
-migrations-down-analytics:
-	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_ANALYTICS_DSN} -table goose_version_analytics down -v
 
 app-setup:
 	make install-all
