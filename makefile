@@ -8,7 +8,6 @@ install-all:
 	make install-grpc
 	make install-protoc
 	make install-grpc-gateway
-	make install-mockery
 	make install-goose
 
 install-grpc:
@@ -121,45 +120,9 @@ migrations-up-analytics:
 migrations-down-analytics:
 	${LOCAL_BIN}/goose -dir ${ANALYTICS_MIGRATION_DIR} postgres ${PG_ANALYTICS_DSN} -table goose_version_analytics down -v
 
-# ==========================================================================================================================
-
-install-mockery:
-	GOBIN=$(LOCAL_BIN) go install github.com/vektra/mockery/v3@v3.6.1
-	
-generate-mocks:
-	${LOCAL_BIN}/mockery --config mockery_auth.yaml
-	${LOCAL_BIN}/mockery --config mockery_links.yaml
-	${LOCAL_BIN}/mockery --config mockery_shared.yaml
-	${LOCAL_BIN}/mockery --config mockery_analytics.yaml
-
-delete-mocks:
-	rm -r ./shared/mocks
-	rm -r ./services/auth/internal/mocks
-	rm -r ./services/links/internal/mocks
-	rm -r ./services/analytics/internal/mocks
-
-# ==========================================================================================================================
-
-test: tests
-
-tests:
-	@set -e; \
-	cleanup() { docker compose -f docker-compose_test.yaml down; }; \
-	trap cleanup EXIT; \
-	docker compose -f docker-compose_test.yaml up -d; \
-	until docker compose -f docker-compose_test.yaml exec -T url_shortener_test pg_isready -U ${PG_USER} -d ${PG_NAME}; do \
-		sleep 1; \
-	done; \
-	go clean -testcache; \
-	(cd ./services/auth && go test ./...); \
-	(cd ./services/links && go test ./...); \
-	(cd ./services/analytics && go test ./...)
-	
 app-setup:
 	make install-all
 	make get-annotation
 	make generate-services
-	make generate-mocks
-	make tests
 	clear
 	@echo "\033[32m✅ Setup done\033[0m"

@@ -17,7 +17,6 @@ URL Shortener — production-ready микросервисное приложен
 - **Наблюдаемость**: Prometheus, Grafana, Postgres Exporter  
 - **Миграции**: Goose  
 - **DI**: Google Wire  
-- **Тесты/моки**: testify, mockery  
 
 ## Ключевые особенности
 - Короткие ссылки с TTL, хранение в Postgres, кэширование в Redis.
@@ -25,7 +24,6 @@ URL Shortener — production-ready микросервисное приложен
 - Analytics‑сервис собирает события (created/fetched/deleted) через NATS и отдаёт агрегированные данные.
 - Метрики Prometheus + готовый Grafana дашборд; Postgres‑exporter для аналитической БД.
 - gRPC + REST (через gRPC‑Gateway) для всех сервисов.
-- Handler и service слои покрыты unit-тестами, repository слой проверяется интеграционными тестами через тестовый PostgreSQL.
 
 ## Структура проекта
 ```sh
@@ -35,14 +33,13 @@ URL Shortener — production-ready микросервисное приложен
 │   ├── auth/                # Auth сервис
 │   ├── links/               # Link сервис
 │   └── analytics/           # Analytics сервис
-├── shared/                  # общие пакеты (broker, configs, models, mocks)
+├── shared/                  # общие пакеты (broker, configs, models)
 ├── deploy/
 │   ├── prometheus.yml       # конфиг Prometheus
 │   ├── grafana_user/        # datasources + dashboards
 │   └── postgres_exporter_user_rw/
 │       └── queries_analytics.yaml   # кастомные метрики для analytics DB
 ├── docker-compose.yaml      # dev окружение
-├── docker-compose_test.yaml # тестовое окружение
 └── makefile
 ```
 
@@ -84,7 +81,6 @@ HTTP_ANALYTICS_PORT=8085 # можно настроить
 PG_AUTH_HOST=url_shortener_auth_pg
 PG_LINKS_HOST=url_shortener_links_pg
 PG_ANALYTICS_HOST=url_shortener_analytics_pg
-PG_TESTS_HOST=0.0.0.0
 PG_NAME=user # можно настроить
 PG_USER=user # можно настроить
 PG_PASSWORD=pass # можно настроить
@@ -94,9 +90,6 @@ PG_DOCKER_PORT=5432
 PG_AUTH_DSN="host=${PG_AUTH_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_DOCKER_PORT}"
 PG_LINKS_DSN="host=${PG_LINKS_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_DOCKER_PORT}"
 PG_ANALYTICS_DSN="host=${PG_ANALYTICS_HOST} user=${PG_USER} password=${PG_PASSWORD} dbname=${PG_NAME} port=${PG_DOCKER_PORT}"
-
-# PostgreSQL Tests
-PG_PORT_TESTS=5435 # можно настроить
 
 # Redis
 REDIS_HOST=url_shortener_redis
@@ -144,18 +137,12 @@ METRICS_ANALYTICS_PORT=9099 # можно настроить
 ```sh
 make app-setup
 ```
-Эта команда установит все зависимости, сгенерирует код и запустит тесты.
+Эта команда установит зависимости и сгенерирует код.
 
 ### Запуск сервера
 
 ```sh
 docker compose up --build
-```
-
-## Тесты
-Запустить полный набор тестов можно следующей командой:
-```sh
-make tests
 ```
 
 ## Серверная часть
@@ -244,4 +231,3 @@ service AnalyticsService {
 - `github.com/prometheus/client_golang`, `github.com/grpc-ecosystem/go-grpc-prometheus` — метрики сервисов и gRPC.
 - `github.com/google/wire` — DI.
 - `github.com/pressly/goose/v3` — миграции.
-- `github.com/stretchr/testify`, `github.com/vektra/mockery/v3` — тестирование и генерация моков.

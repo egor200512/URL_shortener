@@ -1,9 +1,0 @@
-all: true
-recursive: true
-filename: "mock_{{.InterfaceName}}.go"
-dir: ./services/links/internal/mocks
-pkgname: "mocks"
-packages:
-  ./services/links/internal/service: {}
-  ./services/links/internal/repository: {}
-  ./services/links/internal/handlers: {}

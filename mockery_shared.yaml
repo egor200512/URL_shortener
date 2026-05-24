@@ -1,9 +1,0 @@
-all: true
-recursive: true
-filename: "mock_{{.InterfaceName}}.go"
-dir: ./shared/mocks
-pkgname: "mocks"
-packages:
-  ./shared/configs: {}
-  ./shared/pkg/cache: {}
-  
