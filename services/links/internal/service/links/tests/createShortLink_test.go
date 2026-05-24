@@ -59,7 +59,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 				repo.EXPECT().GetByOriginalLink(mock.Anything, "example.com/existing").
 					Return(&models.Link{ShortLink: "abc123", OriginalLink: "example.com/existing"}, nil).Once()
 			},
-			expectedError: "example.com/existing alredy exists",
+			expectedError: "example.com/existing already exists",
 		},
 		{
 			name:   "error - get by original link fails",

@@ -25,7 +25,7 @@ URL Shortener — production-ready микросервисное приложен
 - Analytics‑сервис собирает события (created/fetched/deleted) через NATS и отдаёт агрегированные данные.
 - Метрики Prometheus + готовый Grafana дашборд; Postgres‑exporter для аналитической БД.
 - gRPC + REST (через gRPC‑Gateway) для всех сервисов.
-- Все слои (handler, service, repo) сервисных endpoint'ов покрыты unit-тестами
+- Handler и service слои покрыты unit-тестами, repository слой проверяется интеграционными тестами через тестовый PostgreSQL.
 
 ## Структура проекта
 ```sh
@@ -153,7 +153,7 @@ docker compose up --build
 ```
 
 ## Тесты
-Запустить unit‑тесты можно следующей командой: 
+Запустить полный набор тестов можно следующей командой:
 ```sh
 make tests
 ```

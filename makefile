@@ -140,15 +140,20 @@ delete-mocks:
 
 # ==========================================================================================================================
 
-test:
-	docker compose -f docker-compose_test.yaml up -d
-	sleep 2
-	go clean -testcache
-	cd ./services/auth && go test ./...
-	cd ./services/links && go test ./...
-	cd ./services/analytics && go test ./...
-	docker stop url_shortener_test
-	docker rm url_shortener_test
+test: tests
+
+tests:
+	@set -e; \
+	cleanup() { docker compose -f docker-compose_test.yaml down; }; \
+	trap cleanup EXIT; \
+	docker compose -f docker-compose_test.yaml up -d; \
+	until docker compose -f docker-compose_test.yaml exec -T url_shortener_test pg_isready -U ${PG_USER} -d ${PG_NAME}; do \
+		sleep 1; \
+	done; \
+	go clean -testcache; \
+	(cd ./services/auth && go test ./...); \
+	(cd ./services/links && go test ./...); \
+	(cd ./services/analytics && go test ./...)
 	
 app-setup:
 	make install-all

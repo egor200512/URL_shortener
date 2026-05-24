@@ -11,3 +11,8 @@ services:
       POSTGRES_PASSWORD: ${PG_PASSWORD}
     ports:
       - "${PG_PORT_TESTS}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_NAME}"]
+      interval: 1s
+      timeout: 5s
+      retries: 30

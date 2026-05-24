@@ -23,7 +23,7 @@ func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string
 	}
 
 	if l != nil {
-		return "", fmt.Errorf("%s alredy exists", u.Host+u.Path)
+		return "", fmt.Errorf("%s already exists", u.Host+u.Path)
 	}
 
 	var shortLink string
