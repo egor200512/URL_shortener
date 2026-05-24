@@ -22,7 +22,6 @@ services:
       - "${GRPC_AUTH_PORT}:${GRPC_AUTH_PORT}"
     depends_on:
       - url_shortener_auth_pg
-      - url_shortener_nats
       - url_shortener_redis
 
   url_shortener_links:
@@ -44,7 +43,6 @@ services:
       - "${GRPC_LINKS_PORT}:${GRPC_LINKS_PORT}"
     depends_on:
       - url_shortener_links_pg
-      - url_shortener_nats
       - url_shortener_redis
 
   url_shortener_analytics:
@@ -64,10 +62,8 @@ services:
     ports:
       - "${HTTP_ANALYTICS_PORT}:${HTTP_ANALYTICS_PORT}"
       - "${GRPC_ANALYTICS_PORT}:${GRPC_ANALYTICS_PORT}"
-      - "${METRICS_ANALYTICS_PORT}:${METRICS_ANALYTICS_PORT}"
     depends_on:
       - url_shortener_analytics_pg
-      - url_shortener_nats
       - url_shortener_redis
 
 # ==================================================== pg ====================================================
@@ -122,61 +118,6 @@ services:
     volumes:
       - redis_volume:/data
 
-# ==================================================== nats ====================================================
-  url_shortener_nats:
-    image: nats:2-alpine
-    container_name: url_shortener_nats
-    restart: unless-stopped
-    command: [
-      "-p", "4222",
-      "--jetstream",
-      "--store_dir", "/data/js",
-      "--user", "${NATS_USER}",
-      "--pass", "${NATS_PASSWORD}"
-    ]
-    ports:
-      - "${NATS_PORT}:4222"
-    volumes:
-      - nats_js:/data/js 
-
-# ==================================================== monitoring ====================================================
-
-  url_shortener_prometheus:
-    image: prom/prometheus
-    container_name: url_shortener_prometheus
-    ports:
-      - "${PROMETHEUS_PORT}:9090"
-    volumes:
-      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  url_shortener_grafana:
-    image: grafana/grafana:10.4.3
-    container_name: url_shortener_grafana
-    depends_on:
-      - url_shortener_prometheus
-    ports:
-      - "${GRAFANA_PORT}:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: "user"
-      GF_SECURITY_ADMIN_PASSWORD: "pass"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./deploy/grafana_user/datasources:/etc/grafana/provisioning/datasources
-      - ./deploy/grafana_user/dashboards:/etc/grafana/provisioning/dashboards
-
-  url_shortener_analytics_pg_exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter
-    container_name: url_shortener_analytics_pg_exporter
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${PG_USER}:${PG_PASSWORD}@url_shortener_analytics_pg:5432/${PG_NAME}?sslmode=disable"
-      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
-    volumes:
-      - ./deploy/postgres_exporter_user_rw/queries_analytics.yaml:/etc/postgres_exporter/queries.yaml
-    depends_on:
-      - url_shortener_analytics_pg
-
 # ==================================================== volumes ====================================================
 
 volumes:
@@ -184,5 +125,3 @@ volumes:
   url_shortener_links_pg_volume:
   url_shortener_analytics_pg_volume:
   redis_volume:
-  nats_js:
-  grafana_data:

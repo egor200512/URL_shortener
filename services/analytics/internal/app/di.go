@@ -4,8 +4,6 @@ import (
 	"context"
 
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
-	"github.com/egor200512/URL_shortener/shared/pkg/broker"
-	"github.com/egor200512/URL_shortener/shared/pkg/broker/nats/consumer"
 
 	ah "github.com/egor200512/URL_shortener/services/analytics/internal/handler"
 	ar "github.com/egor200512/URL_shortener/services/analytics/internal/repository"
@@ -28,18 +26,6 @@ func ProvidePgConf() (*configs.PgConf, error) {
 	return configs.NewPgConf()
 }
 
-func ProvideNatsConf() (*configs.NatsConf, error) {
-	return configs.NewNatsConf()
-}
-
-func ProvidePrometheusConf() (*configs.PrometheusConf, error) {
-	return configs.NewPrometheusConf()
-}
-
-func ProvideMetricsConf() (*configs.MetricsConf, error) {
-	return configs.NewMetricsConf()
-}
-
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
 	return pgxpool.Connect(ctx, cfg.AnalyticsDSN())
 }
@@ -54,8 +40,4 @@ func ProvideAnalyticsService(repo ar.IAnalyticsRepo) as.IAnalyticsService {
 
 func ProvideAnalyticsHandler(svc as.IAnalyticsService) desc.AnalyticsServiceServer {
 	return ah.NewAnalyticsRouter(svc)
-}
-
-func ProvideNatsConsumer(conf *configs.NatsConf) broker.IConsumer {
-	return consumer.NewConsumer(conf)
 }

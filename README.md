@@ -3,18 +3,17 @@
 URL Shortener — production-ready микросервисное приложение для быстрого создания и детальной аналитики коротких ссылок. Логика разнесена на три микросервиса:
 
 - **Auth** — выдаёт JWT и управляет пользователями.  
-- **Links** — создаёт/хранит/отдаёт короткие ссылки, кэширует в Redis, шлёт события в NATS.  
-- **Analytics** — слушает NATS, пишет события в свою БД и отдаёт агрегаты/метрики.
+- **Links** — создаёт/хранит/отдаёт короткие ссылки, кэширует в Redis.  
+- **Analytics** — читает данные из своей БД и отдаёт агрегаты.
 
-Из коробки настроены Prometheus и Grafana, есть gRPC и REST, миграции и DI через Wire.
+Из коробки есть gRPC и REST, миграции и DI через Wire.
 
 ## Технологический стек
 - **Язык**: Go 1.25.6 
 - **БД**: PostgreSQL  
-- **Кэш/Очередь**: Redis, NATS (JetStream)  
+- **Кэш**: Redis  
 - **API**: gRPC + gRPC Gateway (REST)  
 - **Аутентификация**: JWT  
-- **Наблюдаемость**: Prometheus, Grafana, Postgres Exporter  
 - **Миграции**: Goose  
 - **DI**: Google Wire  
 - **Тесты/моки**: testify, mockery  
@@ -22,8 +21,7 @@ URL Shortener — production-ready микросервисное приложен
 ## Ключевые особенности
 - Короткие ссылки с TTL, хранение в Postgres, кэширование в Redis.
 - Auth‑сервис с JWT.
-- Analytics‑сервис собирает события (created/fetched/deleted) через NATS и отдаёт агрегированные данные.
-- Метрики Prometheus + готовый Grafana дашборд; Postgres‑exporter для аналитической БД.
+- Analytics‑сервис отдаёт агрегированные данные из своей БД.
 - gRPC + REST (через gRPC‑Gateway) для всех сервисов.
 - Все слои (handler, service, repo) сервисных endpoint'ов покрыты unit-тестами
 
@@ -35,12 +33,7 @@ URL Shortener — production-ready микросервисное приложен
 │   ├── auth/                # Auth сервис
 │   ├── links/               # Link сервис
 │   └── analytics/           # Analytics сервис
-├── shared/                  # общие пакеты (broker, configs, models, mocks)
-├── deploy/
-│   ├── prometheus.yml       # конфиг Prometheus
-│   ├── grafana_user/        # datasources + dashboards
-│   └── postgres_exporter_user_rw/
-│       └── queries_analytics.yaml   # кастомные метрики для analytics DB
+├── shared/                  # общие пакеты (configs, models, mocks)
 ├── docker-compose.yaml      # dev окружение
 ├── docker-compose_test.yaml # тестовое окружение
 └── makefile
@@ -105,17 +98,6 @@ REDIS_PASSWORD=red_pass
 REDIS_DB=0
 REDIS_TTL_MINUTES=600
 
-# NATS
-NATS_HOST=url_shortener_nats
-NATS_PORT=4222 # можно настроить
-NATS_USER=nats_user # можно настроить
-NATS_PASSWORD=nats_pass # можно настроить
-NATS_URL="nats://${NATS_USER}:${NATS_PASSWORD}@${NATS_HOST}:${NATS_PORT}"
-NATS_PREFIX=links 
-NATS_CONSUMER_NAME="analytics_consumer"
-NATS_CONSUMER_BATCH=100
-NATS_CONSUMER_WAIT_MINUTES=5
-
 # Migrations
 AUTH_MIGRATION_DIR=./services/auth/migrations
 LINKS_MIGRATION_DIR=./services/links/migrations
@@ -124,18 +106,6 @@ ANALYTICS_MIGRATION_DIR=./services/analytics/migrations
 # JWT
 JWT_SECRET_KEY="jwt_secret_key"  # добавьте свой ключ (HS256)
 JWT_ACCESS_EXPIRY_MINUTES=60
-
-# PROMETHEUS
-PROMETHEUS_HOST=0.0.0.0
-PROMETHEUS_PORT=9090 # можно настроить
-
-# GRAFANA
-GRAFANA_HOST=0.0.0.0
-GRAFANA_PORT=3000 # можно настроить
-
-# METRICS
-METRICS_HOST=0.0.0.0   
-METRICS_ANALYTICS_PORT=9099 # можно настроить
 
 ```
 Для первого запуска можно просто скопировать и добавить свой `JWT_SECRET_KEY`. 
@@ -162,8 +132,8 @@ make tests
 ### Серверная часть состоит из трёх микросервисов.<br>
 
 - **Auth** хранит пользователей в своей БД, выдаёт/проверяет JWT.
-- **Links** пишет короткие ссылки в свою БД, кэширует их в Redis, публикует события в NATS.
-- **Analytics** подписывается на NATS, складывает события в свою БД, считает агрегаты и отдаёт их через gRPC/REST и `/metrics`.
+- **Links** пишет короткие ссылки в свою БД и кэширует их в Redis.
+- **Analytics** считает агрегаты по своей БД и отдаёт их через gRPC/REST.
 
 Сервисы общаются по gRPC; REST добавлен через gRPC‑Gateway.
 
@@ -213,15 +183,15 @@ service AuthService {
 
 // Links
 service LinksService {
-    // Создаёт короткую ссылку, сохраняет в links.short_links, отправляет событие "created" в NATS
+    // Создаёт короткую ссылку, сохраняет в links.short_links
     rpc CreateLink (CreateLinkRequest) returns (CreateLinkResponse);
-    // Отдает оригинал по slug, публикует событие "fetched"
+    // Отдает оригинал по slug
     rpc GetOriginalLink (GetOriginalLinkRequest) returns (GetOriginalLinkResponse);
     // Получает все ссылки пользователя
     rpc GetUserLinks (GetUserLinksRequest) returns (GetUserLinksResponse);
     // Возвращает метаданные по ссылке
     rpc GetLinkInfo (GetLinkInfoRequest) returns (LinkInfo);
-    // Удаляет ссылку, отправляет событие "deleted"
+    // Удаляет ссылку
     rpc DeleteLink (DeleteLinkRequest) returns (google.protobuf.Empty);
 }
 
@@ -231,17 +201,13 @@ service AnalyticsService {
   rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);
   // Healthcheck
   rpc Health(google.protobuf.Empty) returns (google.protobuf.Empty);
-  // Проксирует promhttp /metrics (для Prometheus)
-  rpc Metrics(google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 ```
 
 ## Зависимости
 - `google.golang.org/grpc`, `github.com/grpc-ecosystem/grpc-gateway/v2` — gRPC + REST Gateway.
 - `github.com/jackc/pgx/v4`, `github.com/georgysavva/scany` — драйвер и маппинг PostgreSQL.
-- `github.com/nats-io/nats.go` — событийная шина (Links публикует, Analytics подписывается).
 - `github.com/redis/go-redis/v9` — кэширование коротких ссылок в Links.
-- `github.com/prometheus/client_golang`, `github.com/grpc-ecosystem/go-grpc-prometheus` — метрики сервисов и gRPC.
 - `github.com/google/wire` — DI.
 - `github.com/pressly/goose/v3` — миграции.
 - `github.com/stretchr/testify`, `github.com/vektra/mockery/v3` — тестирование и генерация моков.

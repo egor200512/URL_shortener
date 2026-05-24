@@ -21,18 +21,6 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	natsConf, err := ProvideNatsConf()
-	if err != nil {
-		return nil, nil, err
-	}
-	prometheusConf, err := ProvidePrometheusConf()
-	if err != nil {
-		return nil, nil, err
-	}
-	metricsConf, err := ProvideMetricsConf()
-	if err != nil {
-		return nil, nil, err
-	}
 	pgConf, err := ProvidePgConf()
 	if err != nil {
 		return nil, nil, err
@@ -44,17 +32,12 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	iAnalyticsRepo := ProvideAnalyticsRepo(ctx, pool)
 	iAnalyticsService := ProvideAnalyticsService(iAnalyticsRepo)
 	analyticsServiceServer := ProvideAnalyticsHandler(iAnalyticsService)
-	iConsumer := ProvideNatsConsumer(natsConf)
 	app := &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
-		NatsConf:         natsConf,
-		PrometheusConf:   prometheusConf,
-		MetricsConf:      metricsConf,
 		AnalyticsHandler: analyticsServiceServer,
 		AnalyticsService: iAnalyticsService,
 		AnalyticsRepo:    iAnalyticsRepo,
-		NatsConsumer:     iConsumer,
 	}
 	return app, func() {
 	}, nil

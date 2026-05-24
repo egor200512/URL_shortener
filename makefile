@@ -1,6 +1,12 @@
-include .env
+-include .env
 
 LOCAL_BIN = $(CURDIR)/shared/bin
+
+export PG_TESTS_HOST ?= 127.0.0.1
+export PG_PORT_TESTS ?= 5435
+export PG_NAME ?= user
+export PG_USER ?= user
+export PG_PASSWORD ?= pass
 
 # ==========================================================================================================================
 
@@ -141,14 +147,14 @@ delete-mocks:
 # ==========================================================================================================================
 
 tests:
-	docker compose -f docker-compose_test.yaml up -d
-	sleep 2
-	go clean -testcache
-	cd ./services/auth && go test ./...
-	cd ./services/links && go test ./...
-	cd ./services/analytics && go test ./...
-	docker stop url_shortener_test
-	docker rm url_shortener_test
+	set -e; \
+	docker compose -f docker-compose_test.yaml up -d; \
+	trap 'docker compose -f docker-compose_test.yaml down' EXIT; \
+	sleep 2; \
+	go clean -testcache; \
+	(cd ./services/auth && go test ./...); \
+	(cd ./services/links && go test ./...); \
+	(cd ./services/analytics && go test ./...)
 	
 app-setup:
 	make install-all

@@ -2,22 +2,17 @@ package app
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net"
 	"net/http"
 	"sync"
 
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
-	"github.com/egor200512/URL_shortener/shared/pkg/broker"
-	grpcprom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/nats-io/nats.go"
 
 	"github.com/egor200512/URL_shortener/services/analytics/internal/repository"
 	"github.com/egor200512/URL_shortener/services/analytics/internal/service"
 	"github.com/egor200512/URL_shortener/shared/configs"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,53 +20,37 @@ import (
 )
 
 type App struct {
-	HttpConf       *configs.HttpConf
-	GrpcConf       *configs.GrpcConf
-	NatsConf       *configs.NatsConf
-	PrometheusConf *configs.PrometheusConf
-	MetricsConf    *configs.MetricsConf
+	HttpConf *configs.HttpConf
+	GrpcConf *configs.GrpcConf
 
 	AnalyticsHandler desc.AnalyticsServiceServer
 	AnalyticsService service.IAnalyticsService
 	AnalyticsRepo    repository.IAnalyticsRepo
 
-	httpServer   *http.Server `wire:"-"`
-	grpcServer   *grpc.Server `wire:"-"`
-	NatsConsumer broker.IConsumer
+	httpServer *http.Server `wire:"-"`
+	grpcServer *grpc.Server `wire:"-"`
 }
 
 func NewApp(
 	httpConf *configs.HttpConf,
 	grpcConf *configs.GrpcConf,
-	natsConf *configs.NatsConf,
-	prometheusConf *configs.PrometheusConf,
-	metricsConf *configs.MetricsConf,
 	analyticsHandler desc.AnalyticsServiceServer,
 	analyticsService service.IAnalyticsService,
 	analyticsRepo repository.IAnalyticsRepo,
-	natsConsumer broker.IConsumer,
 ) *App {
 	return &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
-		NatsConf:         natsConf,
-		PrometheusConf:   prometheusConf,
-		MetricsConf:      metricsConf,
 		AnalyticsHandler: analyticsHandler,
 		AnalyticsService: analyticsService,
 		AnalyticsRepo:    analyticsRepo,
-		NatsConsumer:     natsConsumer,
 	}
 }
 
 func (a *App) initGRPCServer(_ context.Context) error {
 	a.grpcServer = grpc.NewServer(
 		grpc.Creds(insecure.NewCredentials()),
-		grpc.ChainUnaryInterceptor(grpcprom.UnaryServerInterceptor),
-		grpc.ChainStreamInterceptor(grpcprom.StreamServerInterceptor),
 	)
-	grpcprom.Register(a.grpcServer)
-	grpcprom.EnableHandlingTimeHistogram()
 	reflection.Register(a.grpcServer)
 	desc.RegisterAnalyticsServiceServer(a.grpcServer, a.AnalyticsHandler)
 	return nil
@@ -95,13 +74,6 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		Addr:    httpAddr,
 	}
 	return nil
-}
-
-func (a *App) runMetricsServer() error {
-	metricsAddr := a.MetricsConf.AnalyticsAddress()
-
-	log.Printf("Metrics server is running on %s\n", metricsAddr)
-	return http.ListenAndServe(metricsAddr, promhttp.Handler())
 }
 
 func (a *App) runGRPCServer() error {
@@ -134,14 +106,6 @@ func (a *App) Run(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.runMetricsServer(); err != nil {
-			log.Println("metrics error:", err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
 		if err := a.runGRPCServer(); err != nil {
 			log.Println("grpc error:", err)
 		}
@@ -152,55 +116,6 @@ func (a *App) Run(ctx context.Context) error {
 		defer wg.Done()
 		if err := a.runHTTPServer(); err != nil {
 			log.Println("http error:", err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		for {
-			ms, err := a.NatsConsumer.Fetch(
-				a.NatsConf.ConsumerBatch(),
-				a.NatsConf.ConsumerWait(),
-			)
-			if err != nil {
-				if errors.Is(err, nats.ErrTimeout) {
-					continue
-				}
-				log.Printf("nats fetch error: %v\n", err)
-				continue
-			}
-
-			const workerPoolSize = 16
-
-			pool := make(chan struct{}, workerPoolSize)
-			for range workerPoolSize {
-				pool <- struct{}{}
-			}
-
-			for _, msg := range ms {
-				<-pool
-				go func(m *nats.Msg) {
-					defer func() { pool <- struct{}{} }()
-					select {
-					case <-ctx.Done():
-						return
-					default:
-						if err := a.AnalyticsService.HandleMessage(ctx, m); err != nil {
-							log.Printf("failed to handle nats message: %s\n", err.Error())
-							return
-						}
-						if err := m.Ack(); err != nil {
-							log.Printf("failed to ack nats message: %s\n", err.Error())
-						}
-					}
-				}(msg)
-			}
-
-			for range workerPoolSize {
-				<-pool
-			}
 		}
 	}()
 
