@@ -4,6 +4,8 @@ import (
 	"context"
 
 	r "github.com/egor200512/URL_shortener/services/auth/internal/repository"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -16,7 +18,12 @@ const (
 )
 
 type authRepo struct {
-	pool *pgxpool.Pool
+	pool dbPool
+}
+
+type dbPool interface {
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
 func NewAuthRepo(ctx context.Context, pool *pgxpool.Pool) r.IAuthRepo {
