@@ -140,7 +140,7 @@ delete-mocks:
 
 # ==========================================================================================================================
 
-tests:
+test:
 	docker compose -f docker-compose_test.yaml up -d
 	sleep 2
 	go clean -testcache
