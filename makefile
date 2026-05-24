@@ -9,6 +9,7 @@ install-all:
 	make install-protoc
 	make install-grpc-gateway
 	make install-goose
+	make install-mockery
 
 install-grpc:
 	GOBIN=$(LOCAL_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
@@ -21,6 +22,9 @@ install-grpc-gateway:
 
 install-wire:
 	GOBIN=$(LOCAL_BIN) go install github.com/google/wire/cmd/wire@v0.7.0
+
+install-mockery:
+	GOBIN=$(LOCAL_BIN) go install github.com/vektra/mockery/v3@v3.6.1
 
 # ==========================================================================================================================
 
@@ -35,6 +39,16 @@ get-annotation:
 generate-services:
 	make generate-auth
 	make generate-links
+
+generate-mocks:
+	make generate-auth-mocks
+	make generate-links-mocks
+
+generate-auth-mocks:
+	${LOCAL_BIN}/mockery --config .mockery.yml
+
+generate-links-mocks:
+	${LOCAL_BIN}/mockery --config .mockery.yml
 
 generate-auth:
 	mkdir -p shared/gen/auth
@@ -99,5 +113,6 @@ app-setup:
 	make install-all
 	make get-annotation
 	make generate-services
+	make generate-mocks
 	clear
 	@echo "\033[32m✅ Setup done\033[0m"

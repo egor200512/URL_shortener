@@ -1,0 +1,57 @@
+all: false
+dir: '{{.InterfaceDir}}'
+filename: '{{.InterfaceName | snakecase}}.go'
+force-file-write: true
+formatter: goimports
+generate: true
+include-auto-generated: false
+log-level: info
+structname: '{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}'
+recursive: false
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+packages:
+  github.com/egor200512/URL_shortener/services/auth/internal/service:
+    interfaces:
+      IAuthService:
+        config:
+          dir: services/auth/internal/mocks
+          filename: iauth_service.go
+          pkgname: mocks
+  github.com/egor200512/URL_shortener/services/auth/internal/repository:
+    interfaces:
+      IAuthRepo:
+        config:
+          dir: services/auth/internal/mocks
+          filename: iauth_repo.go
+          pkgname: mocks
+  github.com/egor200512/URL_shortener/shared/configs:
+    interfaces:
+      IJwtConf:
+        config:
+          dir: services/auth/internal/mocks
+          filename: i_jwt_conf.go
+          pkgname: mocks
+  github.com/egor200512/URL_shortener/services/links/internal/service:
+    interfaces:
+      ILinksService:
+        config:
+          dir: services/links/internal/mocks
+          filename: ilinks_service.go
+          pkgname: mocks
+  github.com/egor200512/URL_shortener/services/links/internal/repository:
+    interfaces:
+      ILinksRepo:
+        config:
+          dir: services/links/internal/mocks
+          filename: ilinks_repo.go
+          pkgname: mocks
+  github.com/egor200512/URL_shortener/shared/pkg/cache:
+    interfaces:
+      ICache:
+        config:
+          dir: services/links/internal/mocks
+          filename: i_cache.go
+          pkgname: mocks

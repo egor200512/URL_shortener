@@ -4,7 +4,5 @@ shared/bin
 shared/gen
 
 shared/mocks
-services/auth/internal/mocks
-services/links/internal/mocks
 
 hit.sh
