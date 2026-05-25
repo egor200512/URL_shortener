@@ -41,13 +41,6 @@ generate-services:
 	make generate-links
 
 generate-mocks:
-	make generate-auth-mocks
-	make generate-links-mocks
-
-generate-auth-mocks:
-	${LOCAL_BIN}/mockery --config .mockery.yml
-
-generate-links-mocks:
 	${LOCAL_BIN}/mockery --config .mockery.yml
 
 generate-auth:
