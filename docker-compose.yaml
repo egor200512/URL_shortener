@@ -163,8 +163,30 @@ services:
       timeout: 5s
       retries: 10
 
+  url_shortener_nats:
+    image: nats:2-alpine
+    container_name: url_shortener_nats
+    restart: unless-stopped
+    command:
+      - "--jetstream"
+      - "--store_dir=/data/js"
+      - "--http_port=8222"
+      - "--user=${NATS_USER:-nats_user}"
+      - "--pass=${NATS_PASSWORD:-nats_pass}"
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_MONITORING_PORT:-8222}:8222"
+    volumes:
+      - nats_js:/data/js
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz | grep ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   url_shortener_auth_pg_volume:
   url_shortener_links_pg_volume:
   url_shortener_analytics_pg_volume:
   redis_volume:
+  nats_js:
