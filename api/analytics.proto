@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package analytics;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "url_shortener/shared/gen/analytics;analytics";
+
+service AnalyticsService {
+    rpc RecordEvent (RecordEventRequest) returns (google.protobuf.Empty){
+        option (google.api.http) = {
+            post: "/analytics/events"
+            body: "*"
+        };
+    }
+
+    rpc GetEvents (GetEventsRequest) returns (GetEventsResponse){
+        option (google.api.http) = {
+            get: "/analytics/events"
+        };
+    }
+
+    rpc GetLinkStats (GetLinkStatsRequest) returns (GetLinkStatsResponse){
+        option (google.api.http) = {
+            get: "/analytics/links/{short_link}/stats"
+        };
+    }
+}
+
+message RecordEventRequest {
+    string event_type = 1;
+    string user_id = 2;
+    string short_link = 3;
+    string original_link = 4;
+    google.protobuf.Timestamp executed_at = 5;
+}
+
+message GetEventsRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+message GetEventsResponse {
+    repeated LinkEvent events = 1;
+    int32 total_count = 2;
+}
+
+message GetLinkStatsRequest {
+    string short_link = 1;
+}
+
+message GetLinkStatsResponse {
+    string short_link = 1;
+    int32 created_count = 2;
+    int32 fetched_count = 3;
+    int32 deleted_count = 4;
+    int32 total_count = 5;
+}
+
+message LinkEvent {
+    string id = 1;
+    string event_type = 2;
+    string user_id = 3;
+    string short_link = 4;
+    string original_link = 5;
+    google.protobuf.Timestamp executed_at = 6;
+}
