@@ -55,3 +55,10 @@ packages:
           dir: services/links/internal/mocks
           filename: i_cache.go
           pkgname: mocks
+  github.com/egor200512/URL_shortener/shared/pkg/broker:
+    interfaces:
+      IProducer:
+        config:
+          dir: services/links/internal/mocks
+          filename: i_producer.go
+          pkgname: mocks

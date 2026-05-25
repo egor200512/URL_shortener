@@ -47,6 +47,9 @@ services:
   #     REDIS_PASSWORD: ${REDIS_PASSWORD:-red_pass}
   #     REDIS_DB: ${REDIS_DB:-0}
   #     REDIS_TTL_MINUTES: ${REDIS_TTL_MINUTES:-600}
+  #     NATS_URL: nats://${NATS_USER:-nats_user}:${NATS_PASSWORD:-nats_pass}@url_shortener_nats:4222
+  #     NATS_STREAM: ${NATS_STREAM:-LINK_EVENTS}
+  #     NATS_SUBJECT_PREFIX: ${NATS_SUBJECT_PREFIX:-links}
   #     JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local_secret_key}
   #     JWT_ACCESS_EXPIRY_MINUTES: ${JWT_ACCESS_EXPIRY_MINUTES:-60}
   #   ports:
@@ -58,6 +61,8 @@ services:
   #     url_shortener_links_migrate:
   #       condition: service_completed_successfully
   #     url_shortener_redis:
+  #       condition: service_healthy
+  #     url_shortener_nats:
   #       condition: service_healthy
 
   # url_shortener_auth_migrate:

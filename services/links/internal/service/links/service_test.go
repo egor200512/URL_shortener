@@ -3,6 +3,7 @@ package links
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/egor200512/URL_shortener/services/links/internal/mocks"
 	"github.com/egor200512/URL_shortener/services/links/models"
+	"github.com/egor200512/URL_shortener/shared/pkg/events"
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -24,21 +26,22 @@ func TestLinksService_CreateLink(t *testing.T) {
 	created := testLink("abc123")
 
 	tests := []struct {
-		name       string
-		ctx        context.Context
-		existing   *models.Link
-		lookupErr  error
-		insertErr  error
-		cacheErr   error
-		wantErrSub string
-		wantInsert bool
+		name        string
+		ctx         context.Context
+		existing    *models.Link
+		lookupErr   error
+		insertErr   error
+		cacheErr    error
+		wantErrSub  string
+		wantInsert  bool
+		wantPublish bool
 	}{
-		{name: "success", ctx: contextWithUser(userID), wantInsert: true},
+		{name: "success", ctx: contextWithUser(userID), wantInsert: true, wantPublish: true},
 		{name: "original lookup error", ctx: contextWithUser(userID), lookupErr: errors.New("lookup failed"), wantErrSub: "lookup failed"},
 		{name: "already exists", ctx: contextWithUser(userID), existing: created, wantErrSub: "already exists"},
 		{name: "missing user id", ctx: context.Background(), wantErrSub: "failed to get userID"},
 		{name: "insert error", ctx: contextWithUser(userID), insertErr: errors.New("insert failed"), wantErrSub: "insert failed", wantInsert: true},
-		{name: "cache error is ignored", ctx: contextWithUser(userID), cacheErr: errors.New("cache failed"), wantInsert: true},
+		{name: "cache error is ignored", ctx: contextWithUser(userID), cacheErr: errors.New("cache failed"), wantInsert: true, wantPublish: true},
 	}
 
 	for _, tt := range tests {
@@ -47,6 +50,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 
 			repo := mocks.NewILinksRepo(t)
 			cache := mocks.NewICache(t)
+			producer := mocks.NewIProducer(t)
 
 			repo.On("GetByOriginalLink", mock.Anything, "example.com/path").Return(tt.existing, tt.lookupErr).Once()
 			if tt.lookupErr == nil && tt.existing == nil {
@@ -64,8 +68,23 @@ func TestLinksService_CreateLink(t *testing.T) {
 			if tt.wantInsert && tt.insertErr == nil {
 				cache.On("SetShort", mock.Anything, mock.AnythingOfType("string"), created).Return(tt.cacheErr).Once()
 			}
+			if tt.wantPublish {
+				producer.On("Subject", events.LinkCreated).Return("links.created").Once()
+				producer.On("Publish", mock.Anything, "links.created", mock.MatchedBy(func(payload []byte) bool {
+					var event events.LinkEvent
+					if err := json.Unmarshal(payload, &event); err != nil {
+						return false
+					}
+					return event.EventID != "" &&
+						event.EventType == events.LinkCreated &&
+						event.UserID == created.UserID.String() &&
+						event.ShortLink == created.ShortLink &&
+						event.OriginalLink == created.OriginalLink &&
+						!event.ExecutedAt.IsZero()
+				})).Return(nil).Once()
+			}
 
-			svc := NewLinksService(repo, cache, nil)
+			svc := NewLinksService(repo, cache, producer, nil)
 			got, err := svc.CreateLink(tt.ctx, u)
 			assertErrContains(t, err, tt.wantErrSub)
 
@@ -113,7 +132,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 				cache.On("SetShort", mock.Anything, "abc123", tt.repoLink).Return(nil).Once()
 			}
 
-			svc := NewLinksService(repo, cache, nil)
+			svc := NewLinksService(repo, cache, nil, nil)
 			got, err := svc.GetLinkInfo(context.Background(), "abc123")
 			assertErrContains(t, err, tt.wantErrSub)
 
@@ -150,7 +169,7 @@ func TestLinksService_GetUserLinks(t *testing.T) {
 					Return([]string{"a", "b"}, int32(2), tt.repoErr).Once()
 			}
 
-			svc := NewLinksService(repo, cache, nil)
+			svc := NewLinksService(repo, cache, nil, nil)
 			links, total, err := svc.GetUserLinks(tt.ctx, 10, 2)
 			assertErrContains(t, err, tt.wantErrSub)
 
@@ -198,7 +217,7 @@ func TestLinksService_DeleteLink(t *testing.T) {
 				cache.On("DelShort", mock.Anything, "abc123").Return(tt.cacheErr).Once()
 			}
 
-			svc := NewLinksService(repo, cache, nil)
+			svc := NewLinksService(repo, cache, nil, nil)
 			err := svc.DeleteLink(tt.ctx, "abc123")
 			assertErrContains(t, err, tt.wantErrSub)
 		})

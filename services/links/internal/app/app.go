@@ -9,6 +9,7 @@ import (
 
 	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
 	descL "github.com/egor200512/URL_shortener/shared/gen/links"
+	"github.com/egor200512/URL_shortener/shared/pkg/broker"
 	cache "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -29,6 +30,7 @@ type App struct {
 	grpcServer *grpc.Server `wire:"-"`
 	AuthClient descA.AuthServiceClient
 	Cache      cache.ICache
+	Producer   broker.IProducer
 }
 
 func NewApp(
@@ -96,6 +98,10 @@ func (a *App) runHTTPServer() error {
 }
 
 func (a *App) Run(ctx context.Context) error {
+	if a.Producer != nil {
+		defer a.Producer.Close()
+	}
+
 	if err := a.initGRPCServer(ctx); err != nil {
 		return err
 	}

@@ -6,6 +6,8 @@ import (
 
 	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
 	descL "github.com/egor200512/URL_shortener/shared/gen/links"
+	"github.com/egor200512/URL_shortener/shared/pkg/broker"
+	nats "github.com/egor200512/URL_shortener/shared/pkg/broker/nats"
 	cache "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	red "github.com/egor200512/URL_shortener/shared/pkg/cache/redis"
 	"google.golang.org/grpc"
@@ -40,6 +42,10 @@ func ProvideRedisConf() (*configs.RedisConf, error) {
 	return configs.NewRedisConf()
 }
 
+func ProvideNatsConf() (*configs.NatsConf, error) {
+	return configs.NewNatsConf()
+}
+
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
 	return pgxpool.Connect(ctx, cfg.LinksDSN())
 }
@@ -48,8 +54,8 @@ func ProvideLinksRepo(ctx context.Context, pool *pgxpool.Pool) lr.ILinksRepo {
 	return lri.NewLinksRepo(ctx, pool)
 }
 
-func ProvideLinksService(repo lr.ILinksRepo, cache cache.ICache, cfg configs.IJwtConf) ls.ILinksService {
-	return lsi.NewLinksService(repo, cache, cfg)
+func ProvideLinksService(repo lr.ILinksRepo, cache cache.ICache, producer broker.IProducer, cfg configs.IJwtConf) ls.ILinksService {
+	return lsi.NewLinksService(repo, cache, producer, cfg)
 }
 
 func ProvideLinksHandler(svc ls.ILinksService) descL.LinksServiceServer {
@@ -58,6 +64,10 @@ func ProvideLinksHandler(svc ls.ILinksService) descL.LinksServiceServer {
 
 func ProvideCacheCli(cfg *configs.RedisConf) cache.ICache {
 	return red.NewRedisCli(cfg)
+}
+
+func ProvideProducer(cfg *configs.NatsConf) broker.IProducer {
+	return nats.NewProducer(cfg)
 }
 
 func ProvideAuthServiceClient(conf *configs.GrpcConf) descA.AuthServiceClient {
