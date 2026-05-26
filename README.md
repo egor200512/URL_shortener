@@ -121,6 +121,12 @@ make migrations-down-analytics
 - `url_shortener_links_migrate`
 - `url_shortener_analytics_migrate`
 
+## Redis
+
+Redis используется в сервисе **Links** как кэш для коротких ссылок.
+
+Основной источник данных - PostgreSQL, но при получении ссылки сервис сначала проверяет Redis. Если ссылка найдена в кэше, ответ возвращается быстрее и запрос в PostgreSQL не выполняется. Если ссылки в Redis нет, сервис читает ее из PostgreSQL и сохраняет в Redis на время `REDIS_TTL_MINUTES`.
+
 ## NATS
 
 Links публикует события:
