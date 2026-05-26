@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
+	"time"
 )
 
 const (
@@ -15,12 +17,18 @@ const (
 	NATS_PASSWORD       = "NATS_PASSWORD"
 	NATS_STREAM         = "NATS_STREAM"
 	NATS_SUBJECT_PREFIX = "NATS_SUBJECT_PREFIX"
+	NATS_CONSUMER_NAME  = "NATS_CONSUMER_NAME"
+	NATS_CONSUMER_BATCH = "NATS_CONSUMER_BATCH"
+	NATS_CONSUMER_WAIT  = "NATS_CONSUMER_WAIT_SECONDS"
 )
 
 type NatsConf struct {
 	url           string
 	stream        string
 	subjectPrefix string
+	consumerName  string
+	consumerBatch int
+	consumerWait  time.Duration
 }
 
 func NewNatsConf() (*NatsConf, error) {
@@ -56,10 +64,36 @@ func NewNatsConf() (*NatsConf, error) {
 		return nil, errors.New("failed to get nats subject prefix")
 	}
 
+	consumerName := os.Getenv(NATS_CONSUMER_NAME)
+	if consumerName == "" {
+		consumerName = "analytics_consumer"
+	}
+
+	consumerBatch := 100
+	if rawBatch := os.Getenv(NATS_CONSUMER_BATCH); rawBatch != "" {
+		batch, err := strconv.Atoi(rawBatch)
+		if err != nil || batch <= 0 {
+			return nil, errors.New("failed to get valid nats consumer batch")
+		}
+		consumerBatch = batch
+	}
+
+	consumerWait := 5 * time.Second
+	if rawWait := os.Getenv(NATS_CONSUMER_WAIT); rawWait != "" {
+		waitSeconds, err := strconv.Atoi(rawWait)
+		if err != nil || waitSeconds <= 0 {
+			return nil, errors.New("failed to get valid nats consumer wait seconds")
+		}
+		consumerWait = time.Duration(waitSeconds) * time.Second
+	}
+
 	return &NatsConf{
 		url:           url,
 		stream:        stream,
 		subjectPrefix: subjectPrefix,
+		consumerName:  consumerName,
+		consumerBatch: consumerBatch,
+		consumerWait:  consumerWait,
 	}, nil
 }
 
@@ -73,4 +107,16 @@ func (conf *NatsConf) Stream() string {
 
 func (conf *NatsConf) SubjectPrefix() string {
 	return conf.subjectPrefix
+}
+
+func (conf *NatsConf) ConsumerName() string {
+	return conf.consumerName
+}
+
+func (conf *NatsConf) ConsumerBatch() int {
+	return conf.consumerBatch
+}
+
+func (conf *NatsConf) ConsumerWait() time.Duration {
+	return conf.consumerWait
 }

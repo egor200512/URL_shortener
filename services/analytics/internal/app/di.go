@@ -10,6 +10,8 @@ import (
 	asi "github.com/egor200512/URL_shortener/services/analytics/internal/service/analytics"
 	"github.com/egor200512/URL_shortener/shared/configs"
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
+	"github.com/egor200512/URL_shortener/shared/pkg/broker"
+	nats "github.com/egor200512/URL_shortener/shared/pkg/broker/nats"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -23,6 +25,10 @@ func ProvideGrpcConf() (*configs.GrpcConf, error) {
 
 func ProvidePgConf() (*configs.PgConf, error) {
 	return configs.NewPgConf()
+}
+
+func ProvideNatsConf() (*configs.NatsConf, error) {
+	return configs.NewNatsConf()
 }
 
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
@@ -39,4 +45,8 @@ func ProvideAnalyticsService(repo ar.IAnalyticsRepo) as.IAnalyticsService {
 
 func ProvideAnalyticsHandler(svc as.IAnalyticsService) desc.AnalyticsServiceServer {
 	return ah.NewAnalyticsRouter(svc)
+}
+
+func ProvideConsumer(cfg *configs.NatsConf) broker.IConsumer {
+	return nats.NewConsumer(cfg)
 }

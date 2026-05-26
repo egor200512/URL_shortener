@@ -25,6 +25,10 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	natsConf, err := ProvideNatsConf()
+	if err != nil {
+		return nil, nil, err
+	}
 	pool, err := ProvidePgPool(ctx, pgConf)
 	if err != nil {
 		return nil, nil, err
@@ -32,12 +36,14 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	iAnalyticsRepo := ProvideAnalyticsRepo(ctx, pool)
 	iAnalyticsService := ProvideAnalyticsService(iAnalyticsRepo)
 	analyticsServiceServer := ProvideAnalyticsHandler(iAnalyticsService)
+	iConsumer := ProvideConsumer(natsConf)
 	app := &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
 		AnalyticsHandler: analyticsServiceServer,
 		AnalyticsService: iAnalyticsService,
 		AnalyticsRepo:    iAnalyticsRepo,
+		Consumer:         iConsumer,
 	}
 	return app, func() {
 	}, nil

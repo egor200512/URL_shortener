@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -11,10 +13,13 @@ import (
 	"github.com/egor200512/URL_shortener/services/analytics/internal/service"
 	"github.com/egor200512/URL_shortener/shared/configs"
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
+	"github.com/egor200512/URL_shortener/shared/pkg/broker"
+	"github.com/egor200512/URL_shortener/shared/pkg/events"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type App struct {
@@ -24,6 +29,7 @@ type App struct {
 	AnalyticsHandler desc.AnalyticsServiceServer
 	AnalyticsService service.IAnalyticsService
 	AnalyticsRepo    repository.IAnalyticsRepo
+	Consumer         broker.IConsumer
 
 	httpServer *http.Server `wire:"-"`
 	grpcServer *grpc.Server `wire:"-"`
@@ -35,6 +41,7 @@ func NewApp(
 	analyticsHandler desc.AnalyticsServiceServer,
 	analyticsService service.IAnalyticsService,
 	analyticsRepo repository.IAnalyticsRepo,
+	consumer broker.IConsumer,
 ) *App {
 	return &App{
 		HttpConf:         httpConf,
@@ -42,6 +49,7 @@ func NewApp(
 		AnalyticsHandler: analyticsHandler,
 		AnalyticsService: analyticsService,
 		AnalyticsRepo:    analyticsRepo,
+		Consumer:         consumer,
 	}
 }
 
@@ -96,7 +104,52 @@ func (a *App) runHTTPServer() error {
 	return nil
 }
 
+func (a *App) runConsumer(ctx context.Context) error {
+	if a.Consumer == nil {
+		return nil
+	}
+
+	log.Println("NATS consumer is running")
+	return a.Consumer.Consume(ctx, a.handleLinkEvent)
+}
+
+func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
+	var event events.LinkEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return err
+	}
+
+	if event.EventType == "" {
+		return fmt.Errorf("event type is required")
+	}
+	if event.UserID == "" {
+		return fmt.Errorf("user id is required")
+	}
+	if event.ShortLink == "" {
+		return fmt.Errorf("short link is required")
+	}
+	if event.OriginalLink == "" {
+		return fmt.Errorf("original link is required")
+	}
+
+	req := &desc.RecordEventRequest{
+		EventType:    event.EventType,
+		UserId:       event.UserID,
+		ShortLink:    event.ShortLink,
+		OriginalLink: event.OriginalLink,
+	}
+	if !event.ExecutedAt.IsZero() {
+		req.ExecutedAt = timestamppb.New(event.ExecutedAt)
+	}
+
+	return a.AnalyticsService.RecordEvent(ctx, req)
+}
+
 func (a *App) Run(ctx context.Context) error {
+	if a.Consumer != nil {
+		defer a.Consumer.Close()
+	}
+
 	if err := a.initGRPCServer(ctx); err != nil {
 		return err
 	}
@@ -105,7 +158,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -118,6 +171,13 @@ func (a *App) Run(ctx context.Context) error {
 		defer wg.Done()
 		if err := a.runHTTPServer(); err != nil {
 			log.Println("http error:", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := a.runConsumer(ctx); err != nil {
+			log.Println("consumer error:", err)
 		}
 	}()
 
