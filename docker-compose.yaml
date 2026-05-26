@@ -1,101 +1,163 @@
 version: "3.8"
 
 services:
-  # url_shortener_auth:
-  #   build:
-  #     context: .
-  #     dockerfile: services/auth/Dockerfile
-  #   container_name: url_shortener_auth
-  #   restart: unless-stopped
-  #   environment:
-  #     GRPC_HOST: 0.0.0.0
-  #     GRPC_AUTH_DOCKER_HOST: url_shortener_auth
-  #     GRPC_AUTH_PORT: ${GRPC_AUTH_PORT:-8080}
-  #     GRPC_LINKS_PORT: ${GRPC_LINKS_PORT:-8081}
-  #     HTTP_HOST: 0.0.0.0
-  #     HTTP_AUTH_PORT: ${HTTP_AUTH_PORT:-8083}
-  #     HTTP_LINKS_PORT: ${HTTP_LINKS_PORT:-8084}
-  #     PG_AUTH_DSN: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-  #     PG_LINKS_DSN: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-  #     JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local_secret_key}
-  #     JWT_ACCESS_EXPIRY_MINUTES: ${JWT_ACCESS_EXPIRY_MINUTES:-60}
-  #   ports:
-  #     - "${HTTP_AUTH_PORT:-8083}:${HTTP_AUTH_PORT:-8083}"
-  #     - "${GRPC_AUTH_PORT:-8080}:${GRPC_AUTH_PORT:-8080}"
-  #   depends_on:
-  #     url_shortener_auth_migrate:
-  #       condition: service_completed_successfully
+  url_shortener_auth:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: url_shortener_auth
+    restart: unless-stopped
+    environment:
+      GRPC_HOST: 0.0.0.0
+      GRPC_AUTH_DOCKER_HOST: url_shortener_auth
+      GRPC_AUTH_PORT: ${GRPC_AUTH_PORT:-8080}
+      GRPC_LINKS_PORT: ${GRPC_LINKS_PORT:-8081}
+      GRPC_ANALYTICS_PORT: ${GRPC_ANALYTICS_PORT:-8082}
+      HTTP_HOST: 0.0.0.0
+      HTTP_AUTH_PORT: ${HTTP_AUTH_PORT:-8083}
+      HTTP_LINKS_PORT: ${HTTP_LINKS_PORT:-8084}
+      HTTP_ANALYTICS_PORT: ${HTTP_ANALYTICS_PORT:-8085}
+      PG_AUTH_DSN: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      PG_LINKS_DSN: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      PG_ANALYTICS_DSN: host=url_shortener_analytics_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local_secret_key}
+      JWT_ACCESS_EXPIRY_MINUTES: ${JWT_ACCESS_EXPIRY_MINUTES:-60}
+    ports:
+      - "${HTTP_AUTH_PORT:-8083}:${HTTP_AUTH_PORT:-8083}"
+      - "${GRPC_AUTH_PORT:-8080}:${GRPC_AUTH_PORT:-8080}"
+    depends_on:
+      url_shortener_auth_migrate:
+        condition: service_completed_successfully
 
-  # url_shortener_links:
-  #   build:
-  #     context: .
-  #     dockerfile: services/links/Dockerfile
-  #   container_name: url_shortener_links
-  #   restart: unless-stopped
-  #   environment:
-  #     GRPC_HOST: 0.0.0.0
-  #     GRPC_AUTH_DOCKER_HOST: url_shortener_auth
-  #     GRPC_AUTH_PORT: ${GRPC_AUTH_PORT:-8080}
-  #     GRPC_LINKS_PORT: ${GRPC_LINKS_PORT:-8081}
-  #     HTTP_HOST: 0.0.0.0
-  #     HTTP_AUTH_PORT: ${HTTP_AUTH_PORT:-8083}
-  #     HTTP_LINKS_PORT: ${HTTP_LINKS_PORT:-8084}
-  #     PG_AUTH_DSN: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-  #     PG_LINKS_DSN: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-  #     REDIS_HOST: url_shortener_redis
-  #     REDIS_PORT: 6379
-  #     REDIS_PASSWORD: ${REDIS_PASSWORD:-red_pass}
-  #     REDIS_DB: ${REDIS_DB:-0}
-  #     REDIS_TTL_MINUTES: ${REDIS_TTL_MINUTES:-600}
-  #     NATS_URL: nats://${NATS_USER:-nats_user}:${NATS_PASSWORD:-nats_pass}@url_shortener_nats:4222
-  #     NATS_STREAM: ${NATS_STREAM:-LINK_EVENTS}
-  #     NATS_SUBJECT_PREFIX: ${NATS_SUBJECT_PREFIX:-links}
-  #     JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local_secret_key}
-  #     JWT_ACCESS_EXPIRY_MINUTES: ${JWT_ACCESS_EXPIRY_MINUTES:-60}
-  #   ports:
-  #     - "${HTTP_LINKS_PORT:-8084}:${HTTP_LINKS_PORT:-8084}"
-  #     - "${GRPC_LINKS_PORT:-8081}:${GRPC_LINKS_PORT:-8081}"
-  #   depends_on:
-  #     url_shortener_auth:
-  #       condition: service_started
-  #     url_shortener_links_migrate:
-  #       condition: service_completed_successfully
-  #     url_shortener_redis:
-  #       condition: service_healthy
-  #     url_shortener_nats:
-  #       condition: service_healthy
+  url_shortener_links:
+    build:
+      context: .
+      dockerfile: services/links/Dockerfile
+    container_name: url_shortener_links
+    restart: unless-stopped
+    environment:
+      GRPC_HOST: 0.0.0.0
+      GRPC_AUTH_DOCKER_HOST: url_shortener_auth
+      GRPC_AUTH_PORT: ${GRPC_AUTH_PORT:-8080}
+      GRPC_LINKS_PORT: ${GRPC_LINKS_PORT:-8081}
+      GRPC_ANALYTICS_PORT: ${GRPC_ANALYTICS_PORT:-8082}
+      HTTP_HOST: 0.0.0.0
+      HTTP_AUTH_PORT: ${HTTP_AUTH_PORT:-8083}
+      HTTP_LINKS_PORT: ${HTTP_LINKS_PORT:-8084}
+      HTTP_ANALYTICS_PORT: ${HTTP_ANALYTICS_PORT:-8085}
+      PG_AUTH_DSN: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      PG_LINKS_DSN: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      PG_ANALYTICS_DSN: host=url_shortener_analytics_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      REDIS_HOST: url_shortener_redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-red_pass}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_TTL_MINUTES: ${REDIS_TTL_MINUTES:-600}
+      NATS_URL: nats://${NATS_USER:-nats_user}:${NATS_PASSWORD:-nats_pass}@url_shortener_nats:4222
+      NATS_STREAM: ${NATS_STREAM:-LINK_EVENTS}
+      NATS_SUBJECT_PREFIX: ${NATS_SUBJECT_PREFIX:-links}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local_secret_key}
+      JWT_ACCESS_EXPIRY_MINUTES: ${JWT_ACCESS_EXPIRY_MINUTES:-60}
+    ports:
+      - "${HTTP_LINKS_PORT:-8084}:${HTTP_LINKS_PORT:-8084}"
+      - "${GRPC_LINKS_PORT:-8081}:${GRPC_LINKS_PORT:-8081}"
+    depends_on:
+      url_shortener_auth:
+        condition: service_started
+      url_shortener_links_migrate:
+        condition: service_completed_successfully
+      url_shortener_redis:
+        condition: service_healthy
+      url_shortener_nats:
+        condition: service_healthy
 
-  # url_shortener_auth_migrate:
-  #   image: golang:1.25-alpine
-  #   container_name: url_shortener_auth_migrate
-  #   working_dir: /work
-  #   environment:
-  #     GOOSE_DBSTRING: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-  #   volumes:
-  #     - ./services/auth/migrations:/migrations:ro
-  #   command: >
-  #     sh -c "go install github.com/pressly/goose/v3/cmd/goose@v3.26.0 &&
-  #     goose -dir /migrations postgres \"$${GOOSE_DBSTRING}\" up"
-  #   depends_on:
-  #     url_shortener_auth_pg:
-  #       condition: service_healthy
-  #   restart: "no"
+  url_shortener_analytics:
+    build:
+      context: .
+      dockerfile: services/analytics/Dockerfile
+    container_name: url_shortener_analytics
+    restart: unless-stopped
+    environment:
+      GRPC_HOST: 0.0.0.0
+      GRPC_AUTH_DOCKER_HOST: url_shortener_auth
+      GRPC_AUTH_PORT: ${GRPC_AUTH_PORT:-8080}
+      GRPC_LINKS_PORT: ${GRPC_LINKS_PORT:-8081}
+      GRPC_ANALYTICS_PORT: ${GRPC_ANALYTICS_PORT:-8082}
+      HTTP_HOST: 0.0.0.0
+      HTTP_AUTH_PORT: ${HTTP_AUTH_PORT:-8083}
+      HTTP_LINKS_PORT: ${HTTP_LINKS_PORT:-8084}
+      HTTP_ANALYTICS_PORT: ${HTTP_ANALYTICS_PORT:-8085}
+      METRICS_HOST: 0.0.0.0
+      METRICS_ANALYTICS_PORT: ${METRICS_ANALYTICS_PORT:-9090}
+      PG_AUTH_DSN: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      PG_LINKS_DSN: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      PG_ANALYTICS_DSN: host=url_shortener_analytics_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+      NATS_URL: nats://${NATS_USER:-nats_user}:${NATS_PASSWORD:-nats_pass}@url_shortener_nats:4222
+      NATS_STREAM: ${NATS_STREAM:-LINK_EVENTS}
+      NATS_SUBJECT_PREFIX: ${NATS_SUBJECT_PREFIX:-links}
+      NATS_CONSUMER_NAME: ${NATS_CONSUMER_NAME:-analytics_consumer}
+      NATS_CONSUMER_BATCH: ${NATS_CONSUMER_BATCH:-100}
+      NATS_CONSUMER_WAIT_SECONDS: ${NATS_CONSUMER_WAIT_SECONDS:-5}
+    ports:
+      - "${HTTP_ANALYTICS_PORT:-8085}:${HTTP_ANALYTICS_PORT:-8085}"
+      - "${GRPC_ANALYTICS_PORT:-8082}:${GRPC_ANALYTICS_PORT:-8082}"
+      - "${METRICS_ANALYTICS_PORT:-9090}:${METRICS_ANALYTICS_PORT:-9090}"
+    depends_on:
+      url_shortener_analytics_migrate:
+        condition: service_completed_successfully
+      url_shortener_nats:
+        condition: service_healthy
 
-  # url_shortener_links_migrate:
-  #   image: golang:1.25-alpine
-  #   container_name: url_shortener_links_migrate
-  #   working_dir: /work
-  #   environment:
-  #     GOOSE_DBSTRING: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-  #   volumes:
-  #     - ./services/links/migrations:/migrations:ro
-  #   command: >
-  #     sh -c "go install github.com/pressly/goose/v3/cmd/goose@v3.26.0 &&
-  #     goose -dir /migrations postgres \"$${GOOSE_DBSTRING}\" up"
-  #   depends_on:
-  #     url_shortener_links_pg:
-  #       condition: service_healthy
-  #   restart: "no"
+  url_shortener_auth_migrate:
+    image: ubuntu:24.04
+    container_name: url_shortener_auth_migrate
+    working_dir: /work
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+    volumes:
+      - ./services/auth/migrations:/migrations:ro
+      - ./shared/bin/goose:/usr/local/bin/goose:ro
+    command: >
+      sh -c "goose -dir /migrations -table goose_version_auth up -v"
+    depends_on:
+      url_shortener_auth_pg:
+        condition: service_healthy
+    restart: "no"
+
+  url_shortener_links_migrate:
+    image: ubuntu:24.04
+    container_name: url_shortener_links_migrate
+    working_dir: /work
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+    volumes:
+      - ./services/links/migrations:/migrations:ro
+      - ./shared/bin/goose:/usr/local/bin/goose:ro
+    command: >
+      sh -c "goose -dir /migrations -table goose_version_links up -v"
+    depends_on:
+      url_shortener_links_pg:
+        condition: service_healthy
+    restart: "no"
+
+  url_shortener_analytics_migrate:
+    image: ubuntu:24.04
+    container_name: url_shortener_analytics_migrate
+    working_dir: /work
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: host=url_shortener_analytics_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
+    volumes:
+      - ./services/analytics/migrations:/migrations:ro
+      - ./shared/bin/goose:/usr/local/bin/goose:ro
+    command: >
+      sh -c "goose -dir /migrations -table goose_version_analytics up -v"
+    depends_on:
+      url_shortener_analytics_pg:
+        condition: service_healthy
+    restart: "no"
 
   url_shortener_auth_pg:
     image: postgres:17-alpine
