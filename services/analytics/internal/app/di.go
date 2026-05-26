@@ -23,6 +23,10 @@ func ProvideGrpcConf() (*configs.GrpcConf, error) {
 	return configs.NewGRPCConf()
 }
 
+func ProvideMetricsConf() (*configs.MetricsConf, error) {
+	return configs.NewMetricsConf()
+}
+
 func ProvidePgConf() (*configs.PgConf, error) {
 	return configs.NewPgConf()
 }

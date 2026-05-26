@@ -13,6 +13,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	wire.Build(
 		ProvideHttpConf,
 		ProvideGrpcConf,
+		ProvideMetricsConf,
 		ProvidePgConf,
 		ProvideNatsConf,
 

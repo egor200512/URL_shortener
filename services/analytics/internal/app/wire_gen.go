@@ -21,6 +21,10 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	metricsConf, err := ProvideMetricsConf()
+	if err != nil {
+		return nil, nil, err
+	}
 	pgConf, err := ProvidePgConf()
 	if err != nil {
 		return nil, nil, err
@@ -40,6 +44,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	app := &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
+		MetricsConf:      metricsConf,
 		AnalyticsHandler: analyticsServiceServer,
 		AnalyticsService: iAnalyticsService,
 		AnalyticsRepo:    iAnalyticsRepo,

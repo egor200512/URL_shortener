@@ -8,7 +8,9 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/egor200512/URL_shortener/services/analytics/internal/metrics"
 	"github.com/egor200512/URL_shortener/services/analytics/internal/repository"
 	"github.com/egor200512/URL_shortener/services/analytics/internal/service"
 	"github.com/egor200512/URL_shortener/shared/configs"
@@ -16,6 +18,9 @@ import (
 	"github.com/egor200512/URL_shortener/shared/pkg/broker"
 	"github.com/egor200512/URL_shortener/shared/pkg/events"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -23,21 +28,24 @@ import (
 )
 
 type App struct {
-	HttpConf *configs.HttpConf
-	GrpcConf *configs.GrpcConf
+	HttpConf    *configs.HttpConf
+	GrpcConf    *configs.GrpcConf
+	MetricsConf *configs.MetricsConf
 
 	AnalyticsHandler desc.AnalyticsServiceServer
 	AnalyticsService service.IAnalyticsService
 	AnalyticsRepo    repository.IAnalyticsRepo
 	Consumer         broker.IConsumer
 
-	httpServer *http.Server `wire:"-"`
-	grpcServer *grpc.Server `wire:"-"`
+	httpServer    *http.Server `wire:"-"`
+	grpcServer    *grpc.Server `wire:"-"`
+	metricsServer *http.Server `wire:"-"`
 }
 
 func NewApp(
 	httpConf *configs.HttpConf,
 	grpcConf *configs.GrpcConf,
+	metricsConf *configs.MetricsConf,
 	analyticsHandler desc.AnalyticsServiceServer,
 	analyticsService service.IAnalyticsService,
 	analyticsRepo repository.IAnalyticsRepo,
@@ -46,6 +54,7 @@ func NewApp(
 	return &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,
+		MetricsConf:      metricsConf,
 		AnalyticsHandler: analyticsHandler,
 		AnalyticsService: analyticsService,
 		AnalyticsRepo:    analyticsRepo,
@@ -82,6 +91,24 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) initMetricsServer(_ context.Context) error {
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
+	metrics.Register(registry)
+
+	router := http.NewServeMux()
+	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+
+	a.metricsServer = &http.Server{
+		Handler: router,
+		Addr:    a.MetricsConf.AnalyticsAddress(),
+	}
+	return nil
+}
+
 func (a *App) runGRPCServer() error {
 	grpcAddr := a.GrpcConf.AnalyticsAddress()
 	log.Printf("GRPC server is running on %s\n", grpcAddr)
@@ -104,6 +131,15 @@ func (a *App) runHTTPServer() error {
 	return nil
 }
 
+func (a *App) runMetricsServer() error {
+	metricsAddr := a.MetricsConf.AnalyticsAddress()
+	log.Printf("Metrics server is running on %s\n", metricsAddr)
+	if err := a.metricsServer.ListenAndServe(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (a *App) runConsumer(ctx context.Context) error {
 	if a.Consumer == nil {
 		return nil
@@ -114,21 +150,33 @@ func (a *App) runConsumer(ctx context.Context) error {
 }
 
 func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
+	start := time.Now()
+
 	var event events.LinkEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
+		metrics.EventsConsumeErrorsTotal.Inc()
+		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
 		return err
 	}
 
 	if event.EventType == "" {
+		metrics.EventsConsumeErrorsTotal.Inc()
+		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
 		return fmt.Errorf("event type is required")
 	}
 	if event.UserID == "" {
+		metrics.EventsConsumeErrorsTotal.Inc()
+		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
 		return fmt.Errorf("user id is required")
 	}
 	if event.ShortLink == "" {
+		metrics.EventsConsumeErrorsTotal.Inc()
+		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
 		return fmt.Errorf("short link is required")
 	}
 	if event.OriginalLink == "" {
+		metrics.EventsConsumeErrorsTotal.Inc()
+		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
 		return fmt.Errorf("original link is required")
 	}
 
@@ -143,7 +191,15 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 		req.ExecutedAt = timestamppb.New(event.ExecutedAt)
 	}
 
-	return a.AnalyticsService.RecordEvent(ctx, req)
+	if err := a.AnalyticsService.RecordEvent(ctx, req); err != nil {
+		metrics.EventsConsumeErrorsTotal.Inc()
+		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		return err
+	}
+
+	metrics.EventsConsumedTotal.WithLabelValues(event.EventType).Inc()
+	metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+	return nil
 }
 
 func (a *App) Run(ctx context.Context) error {
@@ -157,9 +213,12 @@ func (a *App) Run(ctx context.Context) error {
 	if err := a.initHTTPServer(ctx); err != nil {
 		return err
 	}
+	if err := a.initMetricsServer(ctx); err != nil {
+		return err
+	}
 
 	wg := &sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -172,6 +231,13 @@ func (a *App) Run(ctx context.Context) error {
 		defer wg.Done()
 		if err := a.runHTTPServer(); err != nil {
 			log.Println("http error:", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := a.runMetricsServer(); err != nil {
+			log.Println("metrics error:", err)
 		}
 	}()
 
