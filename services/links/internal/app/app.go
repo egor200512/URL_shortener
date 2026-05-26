@@ -2,10 +2,11 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"net/http"
-	"sync"
+	"time"
 
 	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
 	descL "github.com/egor200512/URL_shortener/shared/gen/links"
@@ -83,6 +84,9 @@ func (a *App) runGRPCServer() error {
 		return err
 	}
 	if err = a.grpcServer.Serve(lis); err != nil {
+		if errors.Is(err, grpc.ErrServerStopped) {
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -92,16 +96,47 @@ func (a *App) runHTTPServer() error {
 	httpAddr := a.HttpConf.LinksAddress()
 	log.Printf("HTTP server is running on %s\n", httpAddr)
 	if err := a.httpServer.ListenAndServe(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
 		return err
 	}
 	return nil
 }
 
-func (a *App) Run(ctx context.Context) error {
-	if a.Producer != nil {
-		defer a.Producer.Close()
+func (a *App) shutdown() error {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if a.httpServer != nil {
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
+			return err
+		}
 	}
 
+	if a.grpcServer != nil {
+		done := make(chan struct{})
+		go func() {
+			a.grpcServer.GracefulStop()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-shutdownCtx.Done():
+			a.grpcServer.Stop()
+			return shutdownCtx.Err()
+		}
+	}
+
+	if a.Producer != nil {
+		a.Producer.Close()
+	}
+
+	return nil
+}
+
+func (a *App) Run(ctx context.Context) error {
 	if err := a.initGRPCServer(ctx); err != nil {
 		return err
 	}
@@ -109,23 +144,29 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	errCh := make(chan error, 2)
 
 	go func() {
-		defer wg.Done()
 		if err := a.runGRPCServer(); err != nil {
-			log.Println("grpc error:", err)
+			errCh <- err
 		}
 	}()
 
 	go func() {
-		defer wg.Done()
 		if err := a.runHTTPServer(); err != nil {
-			log.Println("http error:", err)
+			errCh <- err
 		}
 	}()
 
-	wg.Wait()
-	return nil
+	select {
+	case <-ctx.Done():
+		log.Println("shutdown links app")
+		return a.shutdown()
+	case err := <-errCh:
+		log.Println("links app error:", err)
+		if shutdownErr := a.shutdown(); shutdownErr != nil && !errors.Is(shutdownErr, context.Canceled) {
+			log.Println("links shutdown error:", shutdownErr)
+		}
+		return err
+	}
 }

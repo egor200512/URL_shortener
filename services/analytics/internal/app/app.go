@@ -3,11 +3,11 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/egor200512/URL_shortener/services/analytics/internal/metrics"
@@ -117,6 +117,9 @@ func (a *App) runGRPCServer() error {
 		return err
 	}
 	if err = a.grpcServer.Serve(lis); err != nil {
+		if errors.Is(err, grpc.ErrServerStopped) {
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -126,6 +129,9 @@ func (a *App) runHTTPServer() error {
 	httpAddr := a.HttpConf.AnalyticsAddress()
 	log.Printf("HTTP server is running on %s\n", httpAddr)
 	if err := a.httpServer.ListenAndServe(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -135,6 +141,9 @@ func (a *App) runMetricsServer() error {
 	metricsAddr := a.MetricsConf.AnalyticsAddress()
 	log.Printf("Metrics server is running on %s\n", metricsAddr)
 	if err := a.metricsServer.ListenAndServe(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -146,7 +155,13 @@ func (a *App) runConsumer(ctx context.Context) error {
 	}
 
 	log.Println("NATS consumer is running")
-	return a.Consumer.Consume(ctx, a.handleLinkEvent)
+	if err := a.Consumer.Consume(ctx, a.handleLinkEvent); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
@@ -195,11 +210,45 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 	return nil
 }
 
-func (a *App) Run(ctx context.Context) error {
-	if a.Consumer != nil {
-		defer a.Consumer.Close()
+func (a *App) shutdown() error {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if a.httpServer != nil {
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
+			return err
+		}
 	}
 
+	if a.metricsServer != nil {
+		if err := a.metricsServer.Shutdown(shutdownCtx); err != nil {
+			return err
+		}
+	}
+
+	if a.grpcServer != nil {
+		done := make(chan struct{})
+		go func() {
+			a.grpcServer.GracefulStop()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-shutdownCtx.Done():
+			a.grpcServer.Stop()
+			return shutdownCtx.Err()
+		}
+	}
+
+	if a.Consumer != nil {
+		a.Consumer.Close()
+	}
+
+	return nil
+}
+
+func (a *App) Run(ctx context.Context) error {
 	if err := a.initGRPCServer(ctx); err != nil {
 		return err
 	}
@@ -210,37 +259,41 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
-	wg := &sync.WaitGroup{}
-	wg.Add(4)
+	errCh := make(chan error, 4)
 
 	go func() {
-		defer wg.Done()
 		if err := a.runGRPCServer(); err != nil {
-			log.Println("grpc error:", err)
+			errCh <- err
 		}
 	}()
 
 	go func() {
-		defer wg.Done()
 		if err := a.runHTTPServer(); err != nil {
-			log.Println("http error:", err)
+			errCh <- err
 		}
 	}()
 
 	go func() {
-		defer wg.Done()
 		if err := a.runMetricsServer(); err != nil {
-			log.Println("metrics error:", err)
+			errCh <- err
 		}
 	}()
 
 	go func() {
-		defer wg.Done()
 		if err := a.runConsumer(ctx); err != nil {
-			log.Println("consumer error:", err)
+			errCh <- err
 		}
 	}()
 
-	wg.Wait()
-	return nil
+	select {
+	case <-ctx.Done():
+		log.Println("shutdown analytics app")
+		return a.shutdown()
+	case err := <-errCh:
+		log.Println("analytics app error:", err)
+		if shutdownErr := a.shutdown(); shutdownErr != nil && !errors.Is(shutdownErr, context.Canceled) {
+			log.Println("analytics shutdown error:", shutdownErr)
+		}
+		return err
+	}
 }
