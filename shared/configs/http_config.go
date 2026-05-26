@@ -7,19 +7,21 @@ import (
 )
 
 const (
-	HTTP_HOST       = "HTTP_HOST"
-	HTTP_AUTH_PORT  = "HTTP_AUTH_PORT"
-	HTTP_LINKS_PORT = "HTTP_LINKS_PORT"
+	HTTP_HOST           = "HTTP_HOST"
+	HTTP_AUTH_PORT      = "HTTP_AUTH_PORT"
+	HTTP_LINKS_PORT     = "HTTP_LINKS_PORT"
+	HTTP_ANALYTICS_PORT = "HTTP_ANALYTICS_PORT"
 )
 
 type HttpConf struct {
-	host      string
-	port      string
-	linksPort string
+	host          string
+	port          string
+	linksPort     string
+	analyticsPort string
 }
 
 func NewHttpConf() (*HttpConf, error) {
-	var host, authPort, linksPort string
+	var host, authPort, linksPort, analyticsPort string
 
 	if host = os.Getenv(HTTP_HOST); len(host) == 0 {
 		return nil, errors.New("failed to get http host")
@@ -33,10 +35,15 @@ func NewHttpConf() (*HttpConf, error) {
 		return nil, errors.New("failed to get http linksPort")
 	}
 
+	if analyticsPort = os.Getenv(HTTP_ANALYTICS_PORT); len(analyticsPort) == 0 {
+		return nil, errors.New("failed to get http analyticsPort")
+	}
+
 	return &HttpConf{
-		host:      host,
-		port:      authPort,
-		linksPort: linksPort,
+		host:          host,
+		port:          authPort,
+		linksPort:     linksPort,
+		analyticsPort: analyticsPort,
 	}, nil
 }
 
@@ -46,4 +53,8 @@ func (conf *HttpConf) AuthAddress() string {
 
 func (conf *HttpConf) LinksAddress() string {
 	return net.JoinHostPort(conf.host, conf.linksPort)
+}
+
+func (conf *HttpConf) AnalyticsAddress() string {
+	return net.JoinHostPort(conf.host, conf.analyticsPort)
 }
