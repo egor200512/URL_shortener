@@ -62,3 +62,17 @@ packages:
           dir: services/links/internal/mocks
           filename: i_producer.go
           pkgname: mocks
+  github.com/egor200512/URL_shortener/services/analytics/internal/service:
+    interfaces:
+      IAnalyticsService:
+        config:
+          dir: services/analytics/internal/mocks
+          filename: ianalytics_service.go
+          pkgname: mocks
+  github.com/egor200512/URL_shortener/services/analytics/internal/repository:
+    interfaces:
+      IAnalyticsRepo:
+        config:
+          dir: services/analytics/internal/mocks
+          filename: ianalytics_repo.go
+          pkgname: mocks
