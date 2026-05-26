@@ -154,29 +154,24 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 
 	var event events.LinkEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		metrics.EventsConsumeErrorsTotal.Inc()
-		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		metrics.RecordConsumeError(start)
 		return err
 	}
 
 	if event.EventType == "" {
-		metrics.EventsConsumeErrorsTotal.Inc()
-		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		metrics.RecordConsumeError(start)
 		return fmt.Errorf("event type is required")
 	}
 	if event.UserID == "" {
-		metrics.EventsConsumeErrorsTotal.Inc()
-		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		metrics.RecordConsumeError(start)
 		return fmt.Errorf("user id is required")
 	}
 	if event.ShortLink == "" {
-		metrics.EventsConsumeErrorsTotal.Inc()
-		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		metrics.RecordConsumeError(start)
 		return fmt.Errorf("short link is required")
 	}
 	if event.OriginalLink == "" {
-		metrics.EventsConsumeErrorsTotal.Inc()
-		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		metrics.RecordConsumeError(start)
 		return fmt.Errorf("original link is required")
 	}
 
@@ -192,13 +187,11 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 	}
 
 	if err := a.AnalyticsService.RecordEvent(ctx, req); err != nil {
-		metrics.EventsConsumeErrorsTotal.Inc()
-		metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+		metrics.RecordConsumeError(start)
 		return err
 	}
 
-	metrics.EventsConsumedTotal.WithLabelValues(event.EventType).Inc()
-	metrics.EventHandleDurationSeconds.Observe(time.Since(start).Seconds())
+	metrics.RecordConsumed(event.EventType, start)
 	return nil
 }
 

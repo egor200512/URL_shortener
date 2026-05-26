@@ -1,6 +1,11 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"time"
+
+	"github.com/egor200512/URL_shortener/shared/pkg/events"
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 var (
 	EventsConsumedTotal = prometheus.NewCounterVec(
@@ -39,4 +44,18 @@ func Register(registry *prometheus.Registry) {
 		EventsConsumeErrorsTotal,
 		EventHandleDurationSeconds,
 	)
+
+	for _, eventType := range []string{events.LinkCreated, events.LinkFetched, events.LinkDeleted} {
+		EventsConsumedTotal.WithLabelValues(eventType).Add(0)
+	}
+}
+
+func RecordConsumed(eventType string, startedAt time.Time) {
+	EventsConsumedTotal.WithLabelValues(eventType).Inc()
+	EventHandleDurationSeconds.Observe(time.Since(startedAt).Seconds())
+}
+
+func RecordConsumeError(startedAt time.Time) {
+	EventsConsumeErrorsTotal.Inc()
+	EventHandleDurationSeconds.Observe(time.Since(startedAt).Seconds())
 }
