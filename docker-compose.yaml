@@ -202,9 +202,25 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  url_shortener_grafana:
+    image: grafana/grafana:12.3.0
+    container_name: url_shortener_grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - url_shortener_prometheus
+
 volumes:
   url_shortener_auth_pg_volume:
   url_shortener_links_pg_volume:
   url_shortener_analytics_pg_volume:
   redis_volume:
   nats_js:
+  grafana_data:
