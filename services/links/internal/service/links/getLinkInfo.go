@@ -9,18 +9,19 @@ import (
 )
 
 func (service *linksService) GetLinkInfo(ctx context.Context, shortLink string) (*models.Link, error) {
-	l, err := service.cache.GetShort(ctx, shortLink)
+	cachedLink, err := service.cache.GetShort(ctx, shortLink)
 	if err != nil {
 		log.Printf("failed to get link from cache: %s\n", err.Error())
 	}
 
-	if l != nil {
+	if cachedLink != nil {
 		log.Println("link from cache")
+		l := modelLinkFromCache(cachedLink)
 		service.publishFetchedEvent(ctx, l)
 		return l, nil
 	}
 
-	l, err = service.linksRepo.GetByShortLink(ctx, shortLink)
+	l, err := service.linksRepo.GetByShortLink(ctx, shortLink)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +30,7 @@ func (service *linksService) GetLinkInfo(ctx context.Context, shortLink string) 
 		return nil, nil
 	}
 
-	if err = service.cache.SetShort(ctx, shortLink, l); err != nil {
+	if err = service.cache.SetShort(ctx, shortLink, cacheLinkFromModel(l)); err != nil {
 		log.Printf("failed to cache link: %s\n", err.Error())
 	}
 

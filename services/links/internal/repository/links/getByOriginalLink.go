@@ -23,7 +23,6 @@ func (repo *linksRepository) GetByOriginalLink(ctx context.Context, originalLink
 
 	link := &models.Link{}
 	if err := pgxscan.ScanRow(link, rows); err != nil {
-		fmt.Println("ad")
 		return nil, err
 	}
 

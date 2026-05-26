@@ -138,7 +138,7 @@ func TestAuthService_Login(t *testing.T) {
 			repo.On("CheckRegistration", mock.Anything, email).Return(tt.user, tt.checkErr).Once()
 			if tt.wantJWT {
 				jwtConf.On("Secret").Return(secret).Once()
-				jwtConf.On("AccessExp").Return(time.Duration(1)).Once()
+				jwtConf.On("AccessExp").Return(time.Minute).Once()
 			}
 
 			svc := NewAuthService(repo, jwtConf)
@@ -182,7 +182,7 @@ func TestAuthService_VerifyToken(t *testing.T) {
 	const secret = "test-secret"
 
 	userID := uuid.New()
-	validToken, err := jwtpkg.GenerateToken(userID, "user@example.com", []byte(secret), time.Duration(1))
+	validToken, err := jwtpkg.GenerateToken(userID, "user@example.com", []byte(secret), time.Minute)
 	if err != nil {
 		t.Fatalf("generate token: %v", err)
 	}

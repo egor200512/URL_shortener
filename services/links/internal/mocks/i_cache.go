@@ -7,7 +7,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/egor200512/URL_shortener/services/links/models"
+	"github.com/egor200512/URL_shortener/shared/pkg/cache"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -96,23 +96,23 @@ func (_c *ICache_DelShort_Call) RunAndReturn(run func(ctx context.Context, short
 }
 
 // GetShort provides a mock function for the type ICache
-func (_mock *ICache) GetShort(ctx context.Context, shortLink string) (*models.Link, error) {
+func (_mock *ICache) GetShort(ctx context.Context, shortLink string) (*cache.Link, error) {
 	ret := _mock.Called(ctx, shortLink)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetShort")
 	}
 
-	var r0 *models.Link
+	var r0 *cache.Link
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*models.Link, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*cache.Link, error)); ok {
 		return returnFunc(ctx, shortLink)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *models.Link); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *cache.Link); ok {
 		r0 = returnFunc(ctx, shortLink)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Link)
+			r0 = ret.Get(0).(*cache.Link)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -153,18 +153,18 @@ func (_c *ICache_GetShort_Call) Run(run func(ctx context.Context, shortLink stri
 	return _c
 }
 
-func (_c *ICache_GetShort_Call) Return(link *models.Link, err error) *ICache_GetShort_Call {
+func (_c *ICache_GetShort_Call) Return(link *cache.Link, err error) *ICache_GetShort_Call {
 	_c.Call.Return(link, err)
 	return _c
 }
 
-func (_c *ICache_GetShort_Call) RunAndReturn(run func(ctx context.Context, shortLink string) (*models.Link, error)) *ICache_GetShort_Call {
+func (_c *ICache_GetShort_Call) RunAndReturn(run func(ctx context.Context, shortLink string) (*cache.Link, error)) *ICache_GetShort_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetShort provides a mock function for the type ICache
-func (_mock *ICache) SetShort(ctx context.Context, shortLink string, link *models.Link) error {
+func (_mock *ICache) SetShort(ctx context.Context, shortLink string, link *cache.Link) error {
 	ret := _mock.Called(ctx, shortLink, link)
 
 	if len(ret) == 0 {
@@ -172,7 +172,7 @@ func (_mock *ICache) SetShort(ctx context.Context, shortLink string, link *model
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *models.Link) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *cache.Link) error); ok {
 		r0 = returnFunc(ctx, shortLink, link)
 	} else {
 		r0 = ret.Error(0)
@@ -188,12 +188,12 @@ type ICache_SetShort_Call struct {
 // SetShort is a helper method to define mock.On call
 //   - ctx context.Context
 //   - shortLink string
-//   - link *models.Link
+//   - link *cache.Link
 func (_e *ICache_Expecter) SetShort(ctx interface{}, shortLink interface{}, link interface{}) *ICache_SetShort_Call {
 	return &ICache_SetShort_Call{Call: _e.mock.On("SetShort", ctx, shortLink, link)}
 }
 
-func (_c *ICache_SetShort_Call) Run(run func(ctx context.Context, shortLink string, link *models.Link)) *ICache_SetShort_Call {
+func (_c *ICache_SetShort_Call) Run(run func(ctx context.Context, shortLink string, link *cache.Link)) *ICache_SetShort_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -203,9 +203,9 @@ func (_c *ICache_SetShort_Call) Run(run func(ctx context.Context, shortLink stri
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 *models.Link
+		var arg2 *cache.Link
 		if args[2] != nil {
-			arg2 = args[2].(*models.Link)
+			arg2 = args[2].(*cache.Link)
 		}
 		run(
 			arg0,
@@ -221,7 +221,7 @@ func (_c *ICache_SetShort_Call) Return(err error) *ICache_SetShort_Call {
 	return _c
 }
 
-func (_c *ICache_SetShort_Call) RunAndReturn(run func(ctx context.Context, shortLink string, link *models.Link) error) *ICache_SetShort_Call {
+func (_c *ICache_SetShort_Call) RunAndReturn(run func(ctx context.Context, shortLink string, link *cache.Link) error) *ICache_SetShort_Call {
 	_c.Call.Return(run)
 	return _c
 }

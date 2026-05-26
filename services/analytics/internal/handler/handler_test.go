@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -135,9 +136,9 @@ func TestAnalyticsHandler_GetLinkStats(t *testing.T) {
 }
 
 func cloneRecordEvent(req *desc.RecordEventRequest, mutate func(*desc.RecordEventRequest)) *desc.RecordEventRequest {
-	cp := *req
-	mutate(&cp)
-	return &cp
+	cp := proto.Clone(req).(*desc.RecordEventRequest)
+	mutate(cp)
+	return cp
 }
 
 func assertCode(t *testing.T, err error, want codes.Code) {

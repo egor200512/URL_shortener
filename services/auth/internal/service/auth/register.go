@@ -19,7 +19,9 @@ func (service *authService) Register(ctx context.Context, email string, password
 	}
 
 	salt := make([]byte, 16)
-	rand.Read(salt)
+	if _, err := rand.Read(salt); err != nil {
+		return fmt.Errorf("failed to generate salt: %s", err.Error())
+	}
 
 	saltPassHash, err := bcrypt.GenerateFromPassword([]byte(password+string(salt)), bcrypt.DefaultCost)
 	if err != nil {

@@ -58,7 +58,7 @@ func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string
 		return "", err
 	}
 
-	if err = service.cache.SetShort(ctx, shortLink, created); err != nil {
+	if err = service.cache.SetShort(ctx, shortLink, cacheLinkFromModel(created)); err != nil {
 		log.Printf("failed to cache link: %s\n", err.Error())
 	}
 

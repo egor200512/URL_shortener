@@ -16,7 +16,7 @@ type CastomClaims struct {
 func GenerateToken(id uuid.UUID, email string, secretKey []byte, duration time.Duration) (string, error) {
 	claims := CastomClaims{
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(duration * time.Minute).Unix(),
+			ExpiresAt: time.Now().Add(duration).Unix(),
 		},
 		ID:    id,
 		Email: email,

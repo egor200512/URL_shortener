@@ -183,6 +183,9 @@ func TestLinksRepository_DeleteLink(t *testing.T) {
 		{name: "success", setup: func(db pgxmock.PgxPoolIface) {
 			db.ExpectExec(query).WithArgs("abc123", userID).WillReturnResult(pgxmock.NewResult("DELETE", 1))
 		}},
+		{name: "not deleted", setup: func(db pgxmock.PgxPoolIface) {
+			db.ExpectExec(query).WithArgs("abc123", userID).WillReturnResult(pgxmock.NewResult("DELETE", 0))
+		}, wantErrSub: "was not deleted"},
 		{name: "exec error", setup: func(db pgxmock.PgxPoolIface) {
 			db.ExpectExec(query).WithArgs("abc123", userID).WillReturnError(errors.New("delete failed"))
 		}, wantErrSub: "delete failed"},

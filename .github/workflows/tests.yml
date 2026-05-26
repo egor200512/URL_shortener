@@ -21,6 +21,7 @@ jobs:
           cache-dependency-path: |
             services/auth/go.sum
             services/links/go.sum
+            services/analytics/go.sum
             shared/go.sum
 
       - name: Install protoc
@@ -32,26 +33,41 @@ jobs:
           GRPC_HOST=0.0.0.0
           GRPC_AUTH_PORT=8080
           GRPC_LINKS_PORT=8081
+          GRPC_ANALYTICS_PORT=8082
           GRPC_AUTH_DOCKER_HOST=url_shortener_auth
 
           HTTP_HOST=0.0.0.0
           HTTP_AUTH_PORT=8083
           HTTP_LINKS_PORT=8084
+          HTTP_ANALYTICS_PORT=8085
+          METRICS_HOST=0.0.0.0
+          METRICS_ANALYTICS_PORT=9090
 
           PG_NAME=user
           PG_USER=user
           PG_PASSWORD=pass
           PG_AUTH_DSN=host=127.0.0.1 user=user password=pass dbname=user port=5432 sslmode=disable
           PG_LINKS_DSN=host=127.0.0.1 user=user password=pass dbname=user port=5432 sslmode=disable
+          PG_ANALYTICS_DSN=host=127.0.0.1 user=user password=pass dbname=user port=5432 sslmode=disable
 
           REDIS_HOST=127.0.0.1
           REDIS_PORT=6379
           REDIS_PASSWORD=red_pass
           REDIS_DB=0
           REDIS_TTL_MINUTES=600
+          NATS_HOST=127.0.0.1
+          NATS_PORT=4222
+          NATS_USER=nats_user
+          NATS_PASSWORD=nats_pass
+          NATS_STREAM=LINK_EVENTS
+          NATS_SUBJECT_PREFIX=links
+          NATS_CONSUMER_NAME=analytics_consumer
+          NATS_CONSUMER_BATCH=100
+          NATS_CONSUMER_WAIT_SECONDS=5
 
           AUTH_MIGRATION_DIR=./services/auth/migrations
           LINKS_MIGRATION_DIR=./services/links/migrations
+          ANALYTICS_MIGRATION_DIR=./services/analytics/migrations
 
           JWT_SECRET_KEY=test_secret_key
           JWT_ACCESS_EXPIRY_MINUTES=60
@@ -70,8 +86,4 @@ jobs:
         run: make generate-mocks
 
       - name: Run tests
-        run: |
-          go clean -testcache
-          go test ./services/auth/...
-          go test ./services/links/...
-          go test ./shared/...
+        run: make test

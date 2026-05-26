@@ -12,6 +12,7 @@ import (
 
 	"github.com/egor200512/URL_shortener/services/links/internal/mocks"
 	"github.com/egor200512/URL_shortener/services/links/models"
+	cachepkg "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	"github.com/egor200512/URL_shortener/shared/pkg/events"
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 	"github.com/google/uuid"
@@ -66,7 +67,9 @@ func TestLinksService_CreateLink(t *testing.T) {
 				})).Return(created, tt.insertErr).Once()
 			}
 			if tt.wantInsert && tt.insertErr == nil {
-				cache.On("SetShort", mock.Anything, mock.AnythingOfType("string"), created).Return(tt.cacheErr).Once()
+				cache.On("SetShort", mock.Anything, mock.AnythingOfType("string"), mock.MatchedBy(func(link *cachepkg.Link) bool {
+					return cacheLinkMatchesModel(link, created)
+				})).Return(tt.cacheErr).Once()
 			}
 			if tt.wantPublish {
 				expectLinkEventPublish(producer, events.LinkCreated, "links.created", created)
@@ -90,7 +93,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		cacheLink   *models.Link
+		cacheLink   *cachepkg.Link
 		cacheErr    error
 		repoLink    *models.Link
 		repoErr     error
@@ -99,7 +102,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 		wantErrSub  string
 		wantPublish bool
 	}{
-		{name: "cache hit", cacheLink: link, wantLink: link, wantPublish: true},
+		{name: "cache hit", cacheLink: cacheLinkFromModel(link), wantLink: link, wantPublish: true},
 		{name: "cache miss repo hit", repoLink: link, cacheSet: true, wantLink: link, wantPublish: true},
 		{name: "cache error repo hit", cacheErr: errors.New("cache failed"), repoLink: link, cacheSet: true, wantLink: link, wantPublish: true},
 		{name: "repo not found", wantLink: nil},
@@ -119,7 +122,9 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 				repo.On("GetByShortLink", mock.Anything, "abc123").Return(tt.repoLink, tt.repoErr).Once()
 			}
 			if tt.cacheSet {
-				cache.On("SetShort", mock.Anything, "abc123", tt.repoLink).Return(nil).Once()
+				cache.On("SetShort", mock.Anything, "abc123", mock.MatchedBy(func(link *cachepkg.Link) bool {
+					return cacheLinkMatchesModel(link, tt.repoLink)
+				})).Return(nil).Once()
 			}
 			if tt.wantPublish {
 				expectLinkEventPublish(producer, events.LinkFetched, "links.fetched", tt.wantLink)
@@ -129,7 +134,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 			got, err := svc.GetLinkInfo(context.Background(), "abc123")
 			assertErrContains(t, err, tt.wantErrSub)
 
-			if got != tt.wantLink {
+			if !linkMatches(got, tt.wantLink) {
 				t.Fatalf("link = %#v, want %#v", got, tt.wantLink)
 			}
 		})
@@ -247,6 +252,33 @@ func testLink(short string) *models.Link {
 		OriginalLink:     "example.com/path",
 		CreatedAt:        sql.NullTime{Time: time.Now(), Valid: true},
 	}
+}
+
+func cacheLinkMatchesModel(got *cachepkg.Link, want *models.Link) bool {
+	if got == nil || want == nil {
+		return got == nil && want == nil
+	}
+
+	return got.ID == want.ID &&
+		got.UserID == want.UserID &&
+		got.ShortLink == want.ShortLink &&
+		got.OriginalLinkHost == want.OriginalLinkHost &&
+		got.OriginalLink == want.OriginalLink &&
+		got.CreatedAt.Equal(want.CreatedAt.Time)
+}
+
+func linkMatches(got *models.Link, want *models.Link) bool {
+	if got == nil || want == nil {
+		return got == nil && want == nil
+	}
+
+	return got.ID == want.ID &&
+		got.UserID == want.UserID &&
+		got.ShortLink == want.ShortLink &&
+		got.OriginalLinkHost == want.OriginalLinkHost &&
+		got.OriginalLink == want.OriginalLink &&
+		got.CreatedAt.Valid == want.CreatedAt.Valid &&
+		got.CreatedAt.Time.Equal(want.CreatedAt.Time)
 }
 
 func contextWithUser(userID string) context.Context {
