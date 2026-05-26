@@ -7,5 +7,7 @@ import (
 )
 
 type IAnalyticsRepo interface {
+	InsertEvent(ctx context.Context, event *models.LinkEvent) error
+	GetEvents(ctx context.Context, limit, offset int32) ([]*models.LinkEvent, int32, error)
 	GetLinkStats(ctx context.Context, shortLink string) (*models.LinkStats, error)
 }

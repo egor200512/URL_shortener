@@ -7,5 +7,7 @@ import (
 )
 
 type IAnalyticsService interface {
+	RecordEvent(ctx context.Context, req *desc.RecordEventRequest) error
+	GetEvents(ctx context.Context, limit, offset int32) (*desc.GetEventsResponse, error)
 	GetLinkStats(ctx context.Context, shortLink string) (*desc.GetLinkStatsResponse, error)
 }

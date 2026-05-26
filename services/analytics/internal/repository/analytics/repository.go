@@ -10,9 +10,13 @@ import (
 )
 
 const (
-	LINK_EVENTS = "analytics.link_events"
-	EVENT_TYPE  = "event_type"
-	SHORT_LINK  = "short_link"
+	LINK_EVENTS   = "analytics.link_events"
+	ID            = "id"
+	EVENT_TYPE    = "event_type"
+	USER_ID       = "user_id"
+	SHORT_LINK    = "short_link"
+	ORIGINAL_LINK = "original_link"
+	EXECUTED_AT   = "executed_at"
 )
 
 type analyticsRepository struct {
@@ -21,6 +25,7 @@ type analyticsRepository struct {
 
 type dbPool interface {
 	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
