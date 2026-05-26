@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/egor200512/URL_shortener/services/links/models"
+	"github.com/egor200512/URL_shortener/shared/pkg/events"
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 )
 
@@ -32,5 +34,11 @@ func (service *linksService) DeleteLink(ctx context.Context, shortLink string) e
 		log.Printf("failed to delete link from cache: %s\n", err.Error())
 	}
 
+	service.publishDeletedEvent(ctx, l)
+
 	return nil
+}
+
+func (service *linksService) publishDeletedEvent(ctx context.Context, link *models.Link) {
+	service.publishLinkEvent(ctx, events.LinkDeleted, link)
 }

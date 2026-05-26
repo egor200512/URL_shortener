@@ -69,19 +69,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 				cache.On("SetShort", mock.Anything, mock.AnythingOfType("string"), created).Return(tt.cacheErr).Once()
 			}
 			if tt.wantPublish {
-				producer.On("Subject", events.LinkCreated).Return("links.created").Once()
-				producer.On("Publish", mock.Anything, "links.created", mock.MatchedBy(func(payload []byte) bool {
-					var event events.LinkEvent
-					if err := json.Unmarshal(payload, &event); err != nil {
-						return false
-					}
-					return event.EventID != "" &&
-						event.EventType == events.LinkCreated &&
-						event.UserID == created.UserID.String() &&
-						event.ShortLink == created.ShortLink &&
-						event.OriginalLink == created.OriginalLink &&
-						!event.ExecutedAt.IsZero()
-				})).Return(nil).Once()
+				expectLinkEventPublish(producer, events.LinkCreated, "links.created", created)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -101,18 +89,19 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 	link := testLink("abc123")
 
 	tests := []struct {
-		name       string
-		cacheLink  *models.Link
-		cacheErr   error
-		repoLink   *models.Link
-		repoErr    error
-		cacheSet   bool
-		wantLink   *models.Link
-		wantErrSub string
+		name        string
+		cacheLink   *models.Link
+		cacheErr    error
+		repoLink    *models.Link
+		repoErr     error
+		cacheSet    bool
+		wantLink    *models.Link
+		wantErrSub  string
+		wantPublish bool
 	}{
-		{name: "cache hit", cacheLink: link, wantLink: link},
-		{name: "cache miss repo hit", repoLink: link, cacheSet: true, wantLink: link},
-		{name: "cache error repo hit", cacheErr: errors.New("cache failed"), repoLink: link, cacheSet: true, wantLink: link},
+		{name: "cache hit", cacheLink: link, wantLink: link, wantPublish: true},
+		{name: "cache miss repo hit", repoLink: link, cacheSet: true, wantLink: link, wantPublish: true},
+		{name: "cache error repo hit", cacheErr: errors.New("cache failed"), repoLink: link, cacheSet: true, wantLink: link, wantPublish: true},
 		{name: "repo not found", wantLink: nil},
 		{name: "repo error", repoErr: errors.New("db failed"), wantErrSub: "db failed"},
 	}
@@ -123,6 +112,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 
 			repo := mocks.NewILinksRepo(t)
 			cache := mocks.NewICache(t)
+			producer := mocks.NewIProducer(t)
 
 			cache.On("GetShort", mock.Anything, "abc123").Return(tt.cacheLink, tt.cacheErr).Once()
 			if tt.cacheLink == nil {
@@ -131,8 +121,11 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 			if tt.cacheSet {
 				cache.On("SetShort", mock.Anything, "abc123", tt.repoLink).Return(nil).Once()
 			}
+			if tt.wantPublish {
+				expectLinkEventPublish(producer, events.LinkFetched, "links.fetched", tt.wantLink)
+			}
 
-			svc := NewLinksService(repo, cache, nil, nil)
+			svc := NewLinksService(repo, cache, producer, nil)
 			got, err := svc.GetLinkInfo(context.Background(), "abc123")
 			assertErrContains(t, err, tt.wantErrSub)
 
@@ -186,21 +179,22 @@ func TestLinksService_DeleteLink(t *testing.T) {
 	link := testLink("abc123")
 
 	tests := []struct {
-		name       string
-		ctx        context.Context
-		link       *models.Link
-		lookupErr  error
-		deleteErr  error
-		cacheErr   error
-		wantErrSub string
-		wantDelete bool
+		name        string
+		ctx         context.Context
+		link        *models.Link
+		lookupErr   error
+		deleteErr   error
+		cacheErr    error
+		wantErrSub  string
+		wantDelete  bool
+		wantPublish bool
 	}{
-		{name: "success", ctx: contextWithUser("user-id"), link: link, wantDelete: true},
+		{name: "success", ctx: contextWithUser("user-id"), link: link, wantDelete: true, wantPublish: true},
 		{name: "lookup error", ctx: contextWithUser("user-id"), lookupErr: errors.New("lookup failed"), wantErrSub: "lookup failed"},
 		{name: "not found", ctx: contextWithUser("user-id"), wantErrSub: "doesn't exist"},
 		{name: "missing user id", ctx: context.Background(), link: link, wantErrSub: "failed to get userID"},
 		{name: "delete error", ctx: contextWithUser("user-id"), link: link, deleteErr: errors.New("delete failed"), wantErrSub: "delete failed", wantDelete: true},
-		{name: "cache error is ignored", ctx: contextWithUser("user-id"), link: link, cacheErr: errors.New("cache failed"), wantDelete: true},
+		{name: "cache error is ignored", ctx: contextWithUser("user-id"), link: link, cacheErr: errors.New("cache failed"), wantDelete: true, wantPublish: true},
 	}
 
 	for _, tt := range tests {
@@ -209,6 +203,7 @@ func TestLinksService_DeleteLink(t *testing.T) {
 
 			repo := mocks.NewILinksRepo(t)
 			cache := mocks.NewICache(t)
+			producer := mocks.NewIProducer(t)
 			repo.On("GetByShortLink", mock.Anything, "abc123").Return(tt.link, tt.lookupErr).Once()
 			if tt.wantDelete {
 				repo.On("DeleteLink", mock.Anything, "abc123", "user-id").Return(tt.deleteErr).Once()
@@ -216,12 +211,31 @@ func TestLinksService_DeleteLink(t *testing.T) {
 			if tt.wantDelete && tt.deleteErr == nil {
 				cache.On("DelShort", mock.Anything, "abc123").Return(tt.cacheErr).Once()
 			}
+			if tt.wantPublish {
+				expectLinkEventPublish(producer, events.LinkDeleted, "links.deleted", tt.link)
+			}
 
-			svc := NewLinksService(repo, cache, nil, nil)
+			svc := NewLinksService(repo, cache, producer, nil)
 			err := svc.DeleteLink(tt.ctx, "abc123")
 			assertErrContains(t, err, tt.wantErrSub)
 		})
 	}
+}
+
+func expectLinkEventPublish(producer *mocks.IProducer, eventType, subject string, link *models.Link) {
+	producer.On("Subject", eventType).Return(subject).Once()
+	producer.On("Publish", mock.Anything, subject, mock.MatchedBy(func(payload []byte) bool {
+		var event events.LinkEvent
+		if err := json.Unmarshal(payload, &event); err != nil {
+			return false
+		}
+		return event.EventID != "" &&
+			event.EventType == eventType &&
+			event.UserID == link.UserID.String() &&
+			event.ShortLink == link.ShortLink &&
+			event.OriginalLink == link.OriginalLink &&
+			!event.ExecutedAt.IsZero()
+	})).Return(nil).Once()
 }
 
 func testLink(short string) *models.Link {
