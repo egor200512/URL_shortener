@@ -138,6 +138,7 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 		ShortLink:    event.ShortLink,
 		OriginalLink: event.OriginalLink,
 	}
+
 	if !event.ExecutedAt.IsZero() {
 		req.ExecutedAt = timestamppb.New(event.ExecutedAt)
 	}
