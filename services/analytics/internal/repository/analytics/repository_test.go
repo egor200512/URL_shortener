@@ -54,7 +54,7 @@ func TestAnalyticsRepository_InsertEvent(t *testing.T) {
 func TestAnalyticsRepository_GetEvents(t *testing.T) {
 	t.Parallel()
 
-	countQuery := regexp.QuoteMeta("SELECT COUNT(*) FROM analytics.link_events")
+	countQuery := regexp.QuoteMeta("SELECT COUNT(*) AS total FROM analytics.link_events")
 	eventsQuery := regexp.QuoteMeta("SELECT id::text, event_type, user_id::text, short_link, original_link, executed_at FROM analytics.link_events ORDER BY executed_at DESC LIMIT $1 OFFSET $2")
 	event := testEvent()
 
@@ -66,19 +66,19 @@ func TestAnalyticsRepository_GetEvents(t *testing.T) {
 		wantErrSub string
 	}{
 		{name: "success", setup: func(db pgxmock.PgxPoolIface) {
-			db.ExpectQuery(countQuery).WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(int32(1)))
+			db.ExpectQuery(countQuery).WillReturnRows(pgxmock.NewRows([]string{"total"}).AddRow(int32(1)))
 			db.ExpectQuery(eventsQuery).WithArgs(int32(10), int32(0)).
 				WillReturnRows(eventRows().AddRow(event.ID, event.EventType, event.UserID, event.ShortLink, event.OriginalLink, event.ExecutedAt))
 		}, wantLen: 1, wantTotal: 1},
 		{name: "empty", setup: func(db pgxmock.PgxPoolIface) {
-			db.ExpectQuery(countQuery).WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(int32(0)))
+			db.ExpectQuery(countQuery).WillReturnRows(pgxmock.NewRows([]string{"total"}).AddRow(int32(0)))
 			db.ExpectQuery(eventsQuery).WithArgs(int32(10), int32(0)).WillReturnRows(eventRows())
 		}, wantLen: 0},
 		{name: "count error", setup: func(db pgxmock.PgxPoolIface) {
 			db.ExpectQuery(countQuery).WillReturnError(errors.New("count failed"))
 		}, wantErrSub: "count failed"},
 		{name: "query error", setup: func(db pgxmock.PgxPoolIface) {
-			db.ExpectQuery(countQuery).WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(int32(1)))
+			db.ExpectQuery(countQuery).WillReturnRows(pgxmock.NewRows([]string{"total"}).AddRow(int32(1)))
 			db.ExpectQuery(eventsQuery).WithArgs(int32(10), int32(0)).WillReturnError(errors.New("query failed"))
 		}, wantErrSub: "query failed"},
 	}

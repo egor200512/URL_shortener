@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
+	"github.com/georgysavva/scany/pgxscan"
 )
 
 func (repo *linksRepository) InsertLink(ctx context.Context, req *models.CreateLinkReq) (*models.Link, error) {
@@ -22,17 +23,8 @@ func (repo *linksRepository) InsertLink(ctx context.Context, req *models.CreateL
 		CREATED_AT,
 	)
 
-	row := repo.pool.QueryRow(ctx, query, req.UserID, req.ShortLink, req.OriginalLinkHost, req.OriginalLink)
-
 	link := &models.Link{}
-	if err := row.Scan(
-		&link.ID,
-		&link.UserID,
-		&link.ShortLink,
-		&link.OriginalLinkHost,
-		&link.OriginalLink,
-		&link.CreatedAt,
-	); err != nil {
+	if err := pgxscan.Get(ctx, repo.pool, link, query, req.UserID, req.ShortLink, req.OriginalLinkHost, req.OriginalLink); err != nil {
 		return nil, err
 	}
 

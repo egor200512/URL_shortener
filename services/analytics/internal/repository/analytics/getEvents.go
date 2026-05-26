@@ -5,13 +5,18 @@ import (
 	"fmt"
 
 	"github.com/egor200512/URL_shortener/services/analytics/internal/models"
+	"github.com/georgysavva/scany/pgxscan"
 )
 
 func (repo *analyticsRepository) GetEvents(ctx context.Context, limit, offset int32) ([]*models.LinkEvent, int32, error) {
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s`, LINK_EVENTS)
+	type eventTotal struct {
+		Total int32 `db:"total"`
+	}
 
-	var total int32
-	if err := repo.pool.QueryRow(ctx, countQuery).Scan(&total); err != nil {
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) AS total FROM %s`, LINK_EVENTS)
+
+	var total eventTotal
+	if err := pgxscan.Get(ctx, repo.pool, &total, countQuery); err != nil {
 		return nil, 0, err
 	}
 
@@ -27,32 +32,10 @@ func (repo *analyticsRepository) GetEvents(ctx context.Context, limit, offset in
 		EXECUTED_AT,
 	)
 
-	rows, err := repo.pool.Query(ctx, query, limit, offset)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
 	events := make([]*models.LinkEvent, 0, limit)
-	for rows.Next() {
-		event := &models.LinkEvent{}
-		if err := rows.Scan(
-			&event.ID,
-			&event.EventType,
-			&event.UserID,
-			&event.ShortLink,
-			&event.OriginalLink,
-			&event.ExecutedAt,
-		); err != nil {
-			return nil, 0, err
-		}
-
-		events = append(events, event)
-	}
-
-	if err := rows.Err(); err != nil {
+	if err := pgxscan.Select(ctx, repo.pool, &events, query, limit, offset); err != nil {
 		return nil, 0, err
 	}
 
-	return events, total, nil
+	return events, total.Total, nil
 }
