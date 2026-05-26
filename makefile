@@ -91,6 +91,15 @@ nats-events:
 
 # ==========================================================================================================================
 
+test:
+	go test ./services/auth/...
+	go test ./services/links/...
+	go test ./services/analytics/...
+	go test ./shared/...
+	go clean -testcache
+
+# ==========================================================================================================================
+
 migrations-up:
 	make migrations-up-auth
 	make migrations-up-links
