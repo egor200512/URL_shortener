@@ -33,6 +33,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 		lookupErr   error
 		insertErr   error
 		cacheErr    error
+		publishErr  error
 		wantErrSub  string
 		wantInsert  bool
 		wantPublish bool
@@ -43,6 +44,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 		{name: "missing user id", ctx: context.Background(), wantErrSub: "failed to get userID"},
 		{name: "insert error", ctx: contextWithUser(userID), insertErr: errors.New("insert failed"), wantErrSub: "insert failed", wantInsert: true},
 		{name: "cache error is ignored", ctx: contextWithUser(userID), cacheErr: errors.New("cache failed"), wantInsert: true, wantPublish: true},
+		{name: "producer error is ignored", ctx: contextWithUser(userID), publishErr: errors.New("publish failed"), wantInsert: true, wantPublish: true},
 	}
 
 	for _, tt := range tests {
@@ -72,7 +74,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 				})).Return(tt.cacheErr).Once()
 			}
 			if tt.wantPublish {
-				expectLinkEventPublish(producer, events.LinkCreated, "links.created", created)
+				expectLinkEventPublish(producer, events.LinkCreated, "links.created", created, tt.publishErr)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -97,6 +99,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 		cacheErr    error
 		repoLink    *models.Link
 		repoErr     error
+		publishErr  error
 		cacheSet    bool
 		wantLink    *models.Link
 		wantErrSub  string
@@ -105,6 +108,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 		{name: "cache hit", cacheLink: cacheLinkFromModel(link), wantLink: link, wantPublish: true},
 		{name: "cache miss repo hit", repoLink: link, cacheSet: true, wantLink: link, wantPublish: true},
 		{name: "cache error repo hit", cacheErr: errors.New("cache failed"), repoLink: link, cacheSet: true, wantLink: link, wantPublish: true},
+		{name: "producer error is ignored", repoLink: link, publishErr: errors.New("publish failed"), cacheSet: true, wantLink: link, wantPublish: true},
 		{name: "repo not found", wantLink: nil},
 		{name: "repo error", repoErr: errors.New("db failed"), wantErrSub: "db failed"},
 	}
@@ -127,7 +131,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 				})).Return(nil).Once()
 			}
 			if tt.wantPublish {
-				expectLinkEventPublish(producer, events.LinkFetched, "links.fetched", tt.wantLink)
+				expectLinkEventPublish(producer, events.LinkFetched, "links.fetched", tt.wantLink, tt.publishErr)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -190,6 +194,7 @@ func TestLinksService_DeleteLink(t *testing.T) {
 		lookupErr   error
 		deleteErr   error
 		cacheErr    error
+		publishErr  error
 		wantErrSub  string
 		wantDelete  bool
 		wantPublish bool
@@ -199,7 +204,9 @@ func TestLinksService_DeleteLink(t *testing.T) {
 		{name: "not found", ctx: contextWithUser("user-id"), wantErrSub: "doesn't exist"},
 		{name: "missing user id", ctx: context.Background(), link: link, wantErrSub: "failed to get userID"},
 		{name: "delete error", ctx: contextWithUser("user-id"), link: link, deleteErr: errors.New("delete failed"), wantErrSub: "delete failed", wantDelete: true},
+		{name: "not deleted", ctx: contextWithUser("user-id"), link: link, deleteErr: errors.New("link abc123 was not deleted"), wantErrSub: "was not deleted", wantDelete: true},
 		{name: "cache error is ignored", ctx: contextWithUser("user-id"), link: link, cacheErr: errors.New("cache failed"), wantDelete: true, wantPublish: true},
+		{name: "producer error is ignored", ctx: contextWithUser("user-id"), link: link, publishErr: errors.New("publish failed"), wantDelete: true, wantPublish: true},
 	}
 
 	for _, tt := range tests {
@@ -217,7 +224,7 @@ func TestLinksService_DeleteLink(t *testing.T) {
 				cache.On("DelShort", mock.Anything, "abc123").Return(tt.cacheErr).Once()
 			}
 			if tt.wantPublish {
-				expectLinkEventPublish(producer, events.LinkDeleted, "links.deleted", tt.link)
+				expectLinkEventPublish(producer, events.LinkDeleted, "links.deleted", tt.link, tt.publishErr)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -227,7 +234,12 @@ func TestLinksService_DeleteLink(t *testing.T) {
 	}
 }
 
-func expectLinkEventPublish(producer *mocks.IProducer, eventType, subject string, link *models.Link) {
+func expectLinkEventPublish(producer *mocks.IProducer, eventType, subject string, link *models.Link, publishErr ...error) {
+	var err error
+	if len(publishErr) > 0 {
+		err = publishErr[0]
+	}
+
 	producer.On("Subject", eventType).Return(subject).Once()
 	producer.On("Publish", mock.Anything, subject, mock.MatchedBy(func(payload []byte) bool {
 		var event events.LinkEvent
@@ -240,7 +252,7 @@ func expectLinkEventPublish(producer *mocks.IProducer, eventType, subject string
 			event.ShortLink == link.ShortLink &&
 			event.OriginalLink == link.OriginalLink &&
 			!event.ExecutedAt.IsZero()
-	})).Return(nil).Once()
+	})).Return(err).Once()
 }
 
 func testLink(short string) *models.Link {
