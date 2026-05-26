@@ -84,6 +84,13 @@ install-goose:
 
 # ==========================================================================================================================
 
+nats-events:
+	docker run --rm -it --network url_shortener_default natsio/nats-box \
+	nats --server nats://${NATS_USER}:${NATS_PASSWORD}@url_shortener_nats:4222 \
+	stream view ${NATS_STREAM}
+
+# ==========================================================================================================================
+
 migrations-up:
 	make migrations-up-auth
 	make migrations-up-links
