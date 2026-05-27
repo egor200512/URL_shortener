@@ -58,6 +58,10 @@ func NewConsumer(conf *configs.NatsConf) *Consumer {
 }
 
 func (c *Consumer) Consume(ctx context.Context, handler broker.MessageHandler) error {
+	if handler == nil {
+		return errors.New("nats message handler is not initialized")
+	}
+
 	if c == nil || c.subscription == nil {
 		return errors.New("nats consumer is not initialized")
 	}
@@ -75,18 +79,22 @@ func (c *Consumer) Consume(ctx context.Context, handler broker.MessageHandler) e
 			return err
 		}
 
-		for _, message := range messages {
-			if err := handler(ctx, message.Data); err != nil {
-				log.Printf("failed to handle nats message: %s\n", err.Error())
-				if nakErr := message.Nak(); nakErr != nil {
-					log.Printf("failed to nak nats message: %s\n", nakErr.Error())
-				}
-				continue
-			}
+		c.handleMessages(ctx, messages, handler)
+	}
+}
 
-			if err := message.Ack(); err != nil {
-				log.Printf("failed to ack nats message: %s\n", err.Error())
+func (c *Consumer) handleMessages(ctx context.Context, messages []*nats.Msg, handler broker.MessageHandler) {
+	for _, message := range messages {
+		if err := handler(ctx, message.Data); err != nil {
+			log.Printf("failed to handle nats message: %s\n", err.Error())
+			if nakErr := message.Nak(); nakErr != nil {
+				log.Printf("failed to nak nats message: %s\n", nakErr.Error())
 			}
+			continue
+		}
+
+		if err := message.Ack(); err != nil {
+			log.Printf("failed to ack nats message: %s\n", err.Error())
 		}
 	}
 }
