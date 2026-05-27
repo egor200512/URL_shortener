@@ -149,3 +149,10 @@ app-setup:
 	make generate-mocks
 	clear
 	@echo "\033[32m✅ Setup done\033[0m"
+
+
+local-start:
+	docker compose up 
+
+docker-start:
+	docker compose --profile app up 

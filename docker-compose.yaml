@@ -2,6 +2,8 @@ version: "3.8"
 
 services:
   url_shortener_auth:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: services/auth/Dockerfile
@@ -30,6 +32,8 @@ services:
         condition: service_completed_successfully
 
   url_shortener_links:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: services/links/Dockerfile
@@ -72,6 +76,8 @@ services:
         condition: service_healthy
 
   url_shortener_analytics:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: services/analytics/Dockerfile
@@ -109,6 +115,8 @@ services:
         condition: service_healthy
 
   url_shortener_auth_migrate:
+    profiles:
+      - app
     image: ubuntu:24.04
     container_name: url_shortener_auth_migrate
     working_dir: /work
@@ -126,6 +134,8 @@ services:
     restart: "no"
 
   url_shortener_links_migrate:
+    profiles:
+      - app
     image: ubuntu:24.04
     container_name: url_shortener_links_migrate
     working_dir: /work
@@ -143,6 +153,8 @@ services:
     restart: "no"
 
   url_shortener_analytics_migrate:
+    profiles:
+      - app
     image: ubuntu:24.04
     container_name: url_shortener_analytics_migrate
     working_dir: /work

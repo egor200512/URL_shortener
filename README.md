@@ -50,22 +50,37 @@
 - Go нужен только для локальной разработки и генерации
 - `shared/bin/goose` должен существовать для migration jobs. Если его нет, выполнить `make install-goose`.
 
-Запуск всего приложения:
+Запуск только инфраструктуры для локальной разработки:
 
 ```bash
 docker compose up -d --build
 ```
 
-Compose поднимает:
+Через `make`:
+
+```bash
+make local-start
+```
+
+В этом режиме поднимаются PostgreSQL, Redis, NATS, Prometheus и Grafana. Go-сервисы можно запускать локально через `go run`.
+
+Запуск всего приложения в Docker:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+Через `make`:
+
+```bash
+make docker-start
+```
+
+С профилем `app` дополнительно поднимаются:
 
 - `url_shortener_auth`
 - `url_shortener_links`
 - `url_shortener_analytics`
-- PostgreSQL для каждого сервиса
-- Redis
-- NATS
-- Prometheus
-- Grafana
 - одноразовые migration jobs для auth/links/analytics
 
 ## Генерация и инструменты
