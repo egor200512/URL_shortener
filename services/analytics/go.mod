@@ -1,6 +1,6 @@
 module github.com/egor200512/URL_shortener/services/analytics
 
-go 1.25.5
+go 1.26.3
 
 require (
 	github.com/egor200512/URL_shortener/shared v0.0.0

@@ -13,7 +13,7 @@
 
 ## Стек
 
-- Go 1.25.5
+- Go 1.26.3
 - PostgreSQL
 - Redis
 - NATS JetStream
