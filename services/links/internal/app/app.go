@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -78,7 +78,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 
 func (a *App) runGRPCServer() error {
 	grpcAddr := a.GrpcConf.LinksAddress()
-	log.Printf("GRPC server is running on %s\n", grpcAddr)
+	slog.Info("grpc server is running", "addr", grpcAddr)
 	lis, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (a *App) runGRPCServer() error {
 
 func (a *App) runHTTPServer() error {
 	httpAddr := a.HttpConf.LinksAddress()
-	log.Printf("HTTP server is running on %s\n", httpAddr)
+	slog.Info("http server is running", "addr", httpAddr)
 	if err := a.httpServer.ListenAndServe(); err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
@@ -160,12 +160,12 @@ func (a *App) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		log.Println("shutdown links app")
+		slog.Info("shutdown links app")
 		return a.shutdown()
 	case err := <-errCh:
-		log.Println("links app error:", err)
+		slog.Error("links app error", "error", err)
 		if shutdownErr := a.shutdown(); shutdownErr != nil && !errors.Is(shutdownErr, context.Canceled) {
-			log.Println("links shutdown error:", shutdownErr)
+			slog.Error("links shutdown error", "error", shutdownErr)
 		}
 		return err
 	}

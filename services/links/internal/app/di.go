@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"log"
 
 	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
 	descL "github.com/egor200512/URL_shortener/shared/gen/links"
@@ -10,6 +9,7 @@ import (
 	nats "github.com/egor200512/URL_shortener/shared/pkg/broker/nats"
 	cache "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	red "github.com/egor200512/URL_shortener/shared/pkg/cache/redis"
+	"github.com/egor200512/URL_shortener/shared/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -73,7 +73,7 @@ func ProvideProducer(cfg *configs.NatsConf) broker.IProducer {
 func ProvideAuthServiceClient(conf *configs.GrpcConf) descA.AuthServiceClient {
 	conn, err := grpc.NewClient(conf.AuthDockerAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to create auth client: %s", err.Error())
+		logger.Fatal("failed to create auth client", err)
 	}
 	return descA.NewAuthServiceClient(conn)
 }

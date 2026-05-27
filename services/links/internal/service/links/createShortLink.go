@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
@@ -59,7 +59,7 @@ func (service *linksService) CreateLink(ctx context.Context, u *url.URL) (string
 	}
 
 	if err = service.cache.SetShort(ctx, shortLink, cacheLinkFromModel(created)); err != nil {
-		log.Printf("failed to cache link: %s\n", err.Error())
+		slog.Warn("failed to cache link", "short_link", shortLink, "error", err)
 	}
 
 	service.publishCreatedEvent(ctx, created)

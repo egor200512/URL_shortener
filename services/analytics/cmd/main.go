@@ -2,17 +2,18 @@ package main
 
 import (
 	"context"
-	"log"
 	"os/signal"
 	"syscall"
 
 	"github.com/egor200512/URL_shortener/services/analytics/internal/app"
 	"github.com/egor200512/URL_shortener/shared/configs"
+	"github.com/egor200512/URL_shortener/shared/pkg/logger"
 )
 
 const ENV_FILE_PATH = "/home/egoor/url_shortener/.env"
 
 func main() {
+	logger.Configure("analytics")
 	configs.LoadConfig(ENV_FILE_PATH)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -20,11 +21,11 @@ func main() {
 
 	a, cleanup, err := app.InitServerApp(ctx)
 	if err != nil {
-		log.Fatalf("failed to init analytics app: %v", err)
+		logger.Fatal("failed to init analytics app", err)
 	}
 	defer cleanup()
 
 	if err := a.Run(ctx); err != nil {
-		log.Fatalf("failed to run analytics app: %v", err)
+		logger.Fatal("failed to run analytics app", err)
 	}
 }

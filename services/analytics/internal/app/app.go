@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -111,7 +111,7 @@ func (a *App) initMetricsServer(_ context.Context) error {
 
 func (a *App) runGRPCServer() error {
 	grpcAddr := a.GrpcConf.AnalyticsAddress()
-	log.Printf("GRPC server is running on %s\n", grpcAddr)
+	slog.Info("grpc server is running", "addr", grpcAddr)
 	lis, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
 		return err
@@ -127,7 +127,7 @@ func (a *App) runGRPCServer() error {
 
 func (a *App) runHTTPServer() error {
 	httpAddr := a.HttpConf.AnalyticsAddress()
-	log.Printf("HTTP server is running on %s\n", httpAddr)
+	slog.Info("http server is running", "addr", httpAddr)
 	if err := a.httpServer.ListenAndServe(); err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
@@ -139,7 +139,7 @@ func (a *App) runHTTPServer() error {
 
 func (a *App) runMetricsServer() error {
 	metricsAddr := a.MetricsConf.AnalyticsAddress()
-	log.Printf("Metrics server is running on %s\n", metricsAddr)
+	slog.Info("metrics server is running", "addr", metricsAddr)
 	if err := a.metricsServer.ListenAndServe(); err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
@@ -154,7 +154,7 @@ func (a *App) runConsumer(ctx context.Context) error {
 		return nil
 	}
 
-	log.Println("NATS consumer is running")
+	slog.Info("nats consumer is running")
 	if err := a.Consumer.Consume(ctx, a.handleLinkEvent); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil
@@ -287,12 +287,12 @@ func (a *App) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		log.Println("shutdown analytics app")
+		slog.Info("shutdown analytics app")
 		return a.shutdown()
 	case err := <-errCh:
-		log.Println("analytics app error:", err)
+		slog.Error("analytics app error", "error", err)
 		if shutdownErr := a.shutdown(); shutdownErr != nil && !errors.Is(shutdownErr, context.Canceled) {
-			log.Println("analytics shutdown error:", shutdownErr)
+			slog.Error("analytics shutdown error", "error", shutdownErr)
 		}
 		return err
 	}

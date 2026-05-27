@@ -3,7 +3,7 @@ package links
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 
 	"github.com/egor200512/URL_shortener/shared/pkg/jwt"
 )
@@ -11,7 +11,7 @@ import (
 func (service *linksService) GetUserLinks(ctx context.Context, limit, offset int32) ([]string, int32, error) {
 	userID, ok := ctx.Value(jwt.ClaimsCtxKey).(string)
 	if !ok {
-		log.Println("failed to get userID from ctx")
+		slog.Warn("failed to get user id from context")
 		return nil, 0, errors.New("failed to get userID from ctx")
 	}
 

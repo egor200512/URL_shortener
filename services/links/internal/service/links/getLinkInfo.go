@@ -2,7 +2,7 @@ package links
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
 	"github.com/egor200512/URL_shortener/shared/pkg/events"
@@ -11,11 +11,11 @@ import (
 func (service *linksService) GetLinkInfo(ctx context.Context, shortLink string) (*models.Link, error) {
 	cachedLink, err := service.cache.GetShort(ctx, shortLink)
 	if err != nil {
-		log.Printf("failed to get link from cache: %s\n", err.Error())
+		slog.Warn("failed to get link from cache", "short_link", shortLink, "error", err)
 	}
 
 	if cachedLink != nil {
-		log.Println("link from cache")
+		slog.Info("link found in cache", "short_link", shortLink)
 		l := modelLinkFromCache(cachedLink)
 		service.publishFetchedEvent(ctx, l)
 		return l, nil
@@ -31,7 +31,7 @@ func (service *linksService) GetLinkInfo(ctx context.Context, shortLink string) 
 	}
 
 	if err = service.cache.SetShort(ctx, shortLink, cacheLinkFromModel(l)); err != nil {
-		log.Printf("failed to cache link: %s\n", err.Error())
+		slog.Warn("failed to cache link", "short_link", shortLink, "error", err)
 	}
 
 	service.publishFetchedEvent(ctx, l)

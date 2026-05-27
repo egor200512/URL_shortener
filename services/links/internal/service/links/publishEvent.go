@@ -3,7 +3,7 @@ package links
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
@@ -27,11 +27,11 @@ func (service *linksService) publishLinkEvent(ctx context.Context, eventType str
 
 	payload, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("failed to marshal link event: %s\n", err.Error())
+		slog.Warn("failed to marshal link event", "event_type", eventType, "short_link", link.ShortLink, "error", err)
 		return
 	}
 
 	if err := service.producer.Publish(ctx, service.producer.Subject(eventType), payload); err != nil {
-		log.Printf("failed to publish link event: %s\n", err.Error())
+		slog.Warn("failed to publish link event", "event_type", eventType, "short_link", link.ShortLink, "error", err)
 	}
 }

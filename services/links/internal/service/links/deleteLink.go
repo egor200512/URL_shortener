@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/egor200512/URL_shortener/services/links/models"
 	"github.com/egor200512/URL_shortener/shared/pkg/events"
@@ -31,7 +31,7 @@ func (service *linksService) DeleteLink(ctx context.Context, shortLink string) e
 	}
 
 	if err := service.cache.DelShort(ctx, shortLink); err != nil {
-		log.Printf("failed to delete link from cache: %s\n", err.Error())
+		slog.Warn("failed to delete link from cache", "short_link", shortLink, "error", err)
 	}
 
 	service.publishDeletedEvent(ctx, l)

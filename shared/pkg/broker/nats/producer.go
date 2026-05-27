@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/egor200512/URL_shortener/shared/configs"
+	"github.com/egor200512/URL_shortener/shared/pkg/logger"
 	"github.com/nats-io/nats.go"
 )
 
@@ -20,12 +20,12 @@ type Producer struct {
 func NewProducer(conf *configs.NatsConf) *Producer {
 	conn, err := nats.Connect(conf.URL())
 	if err != nil {
-		log.Fatalf("failed to connect to nats: %s", err.Error())
+		logger.Fatal("failed to connect to nats", err)
 	}
 
 	js, err := conn.JetStream()
 	if err != nil {
-		log.Fatalf("failed to create nats jetstream context: %s", err.Error())
+		logger.Fatal("failed to create nats jetstream context", err)
 	}
 
 	p := &Producer{
@@ -36,7 +36,7 @@ func NewProducer(conf *configs.NatsConf) *Producer {
 	}
 
 	if err := p.ensureStream(); err != nil {
-		log.Fatalf("failed to ensure nats stream: %s", err.Error())
+		logger.Fatal("failed to ensure nats stream", err)
 	}
 
 	return p

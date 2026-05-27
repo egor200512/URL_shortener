@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/egor200512/URL_shortener/shared/configs"
 	"github.com/egor200512/URL_shortener/shared/pkg/broker"
+	"github.com/egor200512/URL_shortener/shared/pkg/logger"
 	"github.com/nats-io/nats.go"
 )
 
@@ -26,12 +27,12 @@ type Consumer struct {
 func NewConsumer(conf *configs.NatsConf) *Consumer {
 	conn, err := nats.Connect(conf.URL())
 	if err != nil {
-		log.Fatalf("failed to connect to nats: %s", err.Error())
+		logger.Fatal("failed to connect to nats", err)
 	}
 
 	js, err := conn.JetStream()
 	if err != nil {
-		log.Fatalf("failed to create nats jetstream context: %s", err.Error())
+		logger.Fatal("failed to create nats jetstream context", err)
 	}
 
 	c := &Consumer{
@@ -45,12 +46,12 @@ func NewConsumer(conf *configs.NatsConf) *Consumer {
 	}
 
 	if err := c.ensureStream(); err != nil {
-		log.Fatalf("failed to ensure nats stream: %s", err.Error())
+		logger.Fatal("failed to ensure nats stream", err)
 	}
 
 	sub, err := c.js.PullSubscribe(c.Subject(">"), c.consumerName, nats.BindStream(c.stream))
 	if err != nil {
-		log.Fatalf("failed to subscribe to nats stream: %s", err.Error())
+		logger.Fatal("failed to subscribe to nats stream", err)
 	}
 	c.subscription = sub
 
@@ -86,15 +87,15 @@ func (c *Consumer) Consume(ctx context.Context, handler broker.MessageHandler) e
 func (c *Consumer) handleMessages(ctx context.Context, messages []*nats.Msg, handler broker.MessageHandler) {
 	for _, message := range messages {
 		if err := handler(ctx, message.Data); err != nil {
-			log.Printf("failed to handle nats message: %s\n", err.Error())
+			slog.Warn("failed to handle nats message", "error", err)
 			if nakErr := message.Nak(); nakErr != nil {
-				log.Printf("failed to nak nats message: %s\n", nakErr.Error())
+				slog.Warn("failed to nak nats message", "error", nakErr)
 			}
 			continue
 		}
 
 		if err := message.Ack(); err != nil {
-			log.Printf("failed to ack nats message: %s\n", err.Error())
+			slog.Warn("failed to ack nats message", "error", err)
 		}
 	}
 }
@@ -109,7 +110,7 @@ func (c *Consumer) Close() {
 	}
 	if c.subscription != nil {
 		if err := c.subscription.Drain(); err != nil {
-			log.Printf("failed to drain nats subscription: %s\n", err.Error())
+			slog.Warn("failed to drain nats subscription", "error", err)
 		}
 	}
 	if c.conn != nil {
