@@ -295,6 +295,21 @@ go test ./services/analytics/...
 go test ./shared/...
 ```
 
+### Покрытие unit-тестами
+
+Основные бизнес-слои покрыты unit-тестами по микросервисам:
+
+- `services/auth` - handler, service и repository слой. Проверяются регистрация, логин, проверка JWT, ошибки валидации, ошибки репозитория и сценарии с невалидными учетными данными.
+- `services/links` - handler, service и repository слой. Проверяются создание short link, получение original link, получение информации о ссылке, список ссылок пользователя, удаление ссылки, работа с Redis cache и отправка analytics events через producer.
+- `services/analytics` - handler, service, repository и app слой. Проверяются `RecordEvent`, `GetEvents`, `GetLinkStats`, запись событий в БД, получение статистики и обработка событий из NATS.
+- `shared` - общие пакеты: JWT generate/verify, gRPC auth interceptor, конфиги, валидация email/password, генерация short link, Redis cache и базовая логика NATS producer/consumer.
+
+В тестах не поднимаются реальные PostgreSQL, Redis и NATS:
+
+- для handler/service слоев используются моки, сгенерированные через `mockery`;
+- для repository слоя используется `pgxmock`;
+- для Redis cache используется `redismock`;
+
 ## Зависимости
 
 - `github.com/jackc/pgx/v4` - PostgreSQL driver.
