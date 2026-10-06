@@ -7,8 +7,8 @@
 В проекте три микросервиса:
 
 - **Auth** - регистрация, логин, выдача и проверка JWT.
-- **Links** - создание, получение и удаление коротких ссылок. Пишет данные в PostgreSQL, кэширует ссылки в Redis и публикует события в NATS.
-- **Analytics** - читает события из NATS, сохраняет их в PostgreSQL и отдает статистику через API.
+- **Links** - создание, получение и удаление коротких ссылок. Пишет данные в PostgreSQL, кэширует ссылки в Redis и публикует события в Kafka.
+- **Analytics** - читает события из Kafka, сохраняет их в PostgreSQL и отдает статистику через API.
 
 
 ## Стек
@@ -16,7 +16,7 @@
 - Go 1.26.3
 - PostgreSQL
 - Redis
-- NATS JetStream
+- Apache Kafka (KRaft)
 - gRPC + gRPC Gateway
 - JWT
 - Goose
@@ -33,7 +33,7 @@
 ├── services/
 │   ├── auth/                    # Auth service
 │   ├── links/                   # Links service
-│   └── analytics/               # Analytics service + NATS consumer + metrics
+│   └── analytics/               # Analytics service + Kafka consumer + metrics
 ├── shared/                      # configs, generated proto, jwt, cache, broker, events
 ├── prometheus/prometheus.yaml   # Prometheus scrape config
 ├── grafana/provisioning/        # Grafana datasource provisioning
@@ -50,6 +50,12 @@
 - Go нужен только для локальной разработки и генерации
 - `shared/bin/goose` должен существовать для migration jobs. Если его нет, выполнить `make install-goose`.
 
+Создать локальную конфигурацию:
+
+```bash
+cp .env.example .env
+```
+
 Запуск только инфраструктуры для локальной разработки:
 
 ```bash
@@ -62,7 +68,7 @@ docker compose up -d --build
 make local-start
 ```
 
-В этом режиме поднимаются PostgreSQL, Redis, NATS, Prometheus и Grafana. Go-сервисы можно запускать локально через `go run`.
+В этом режиме поднимаются PostgreSQL, Redis, Kafka, Prometheus и Grafana. Go-сервисы можно запускать локально через `go run`.
 
 Запуск всего приложения в Docker:
 
@@ -101,6 +107,12 @@ make generate-services
 
 ```bash
 make generate-mocks
+```
+
+Запуск линтера:
+
+```bash
+make lint
 ```
 
 Полная настройка dev-окружения:
@@ -144,20 +156,21 @@ Redis используется в сервисе **Links** как кэш для 
 
 Основной источник данных - PostgreSQL, но при получении ссылки сервис сначала проверяет Redis. Если ссылка найдена в кэше, ответ возвращается быстрее и запрос в PostgreSQL не выполняется. Если ссылки в Redis нет, сервис читает ее из PostgreSQL и сохраняет в Redis на время `REDIS_TTL_MINUTES`.
 
-## NATS
+## Kafka
 
-Links публикует события:
+Links публикует JSON-события `created`, `fetched` и `deleted` в topic `link_events`. В качестве message key используется `short_link`, поэтому события одной ссылки попадают в одну partition и обрабатываются по порядку.
 
-- `links.created`
-- `links.fetched`
-- `links.deleted`
+Analytics читает topic в consumer group `analytics_consumer`. Auto commit отключён: offset подтверждается только после успешной записи события в `analytics.link_events`. Обработка выполняется последовательно внутри partition и параллельно между partition.
 
-Analytics consumer читает `links.>` из stream `LINK_EVENTS`, сохраняет события в таблицу `analytics.link_events` и подтверждает сообщения через `Ack`.
+При ошибке handler выполняется до `KAFKA_HANDLER_MAX_ATTEMPTS` попыток с exponential backoff. Если все попытки исчерпаны, исходные key/payload и диагностические headers отправляются в `link_events.dlq`; исходный offset подтверждается только после успешной записи в DLQ. Если DLQ недоступен, offset не подтверждается.
 
-Посмотреть события в stream:
+Kafka запускается одним KRaft-узлом. Topics создаёт контейнер `url_shortener_kafka_init`, сообщения хранятся в persistent volume без ограничения срока (`retention.ms=-1`). Это локальная конфигурация; для production следует использовать кластер с репликацией и защищёнными listeners.
+
+Посмотреть события, не затрагивая offsets группы Analytics:
 
 ```bash
-make nats-events
+make kafka-events
+make kafka-dlq-events
 ```
 
 ## Prometheus И Grafana
@@ -318,10 +331,10 @@ go test ./shared/...
 
 - `services/auth` - handler, service и repository слой. Проверяются регистрация, логин, проверка JWT, ошибки валидации, ошибки репозитория и сценарии с невалидными учетными данными.
 - `services/links` - handler, service и repository слой. Проверяются создание short link, получение original link, получение информации о ссылке, список ссылок пользователя, удаление ссылки, работа с Redis cache и отправка analytics events через producer.
-- `services/analytics` - handler, service, repository и app слой. Проверяются `RecordEvent`, `GetEvents`, `GetLinkStats`, запись событий в БД, получение статистики и обработка событий из NATS.
-- `shared` - общие пакеты: JWT generate/verify, gRPC auth interceptor, конфиги, валидация email/password, генерация short link, Redis cache и базовая логика NATS producer/consumer.
+- `services/analytics` - handler, service, repository и app слой. Проверяются `RecordEvent`, `GetEvents`, `GetLinkStats`, запись событий в БД, получение статистики и обработка событий из Kafka.
+- `shared` - общие пакеты: JWT generate/verify, gRPC auth interceptor, конфиги, валидация email/password, генерация short link, Redis cache и Kafka producer/consumer.
 
-В тестах не поднимаются реальные PostgreSQL, Redis и NATS:
+В unit-тестах не поднимаются реальные PostgreSQL, Redis и Kafka:
 
 - для handler/service слоев используются моки, сгенерированные через `mockery`;
 - для repository слоя используется `pgxmock`;
@@ -339,3 +352,4 @@ go test ./shared/...
 - `github.com/stretchr/testify` - assertions и mock helpers.
 - `github.com/vektra/mockery/v2` - генерация моков.
 - `github.com/pashagolub/pgxmock` - repository tests без настоящей БД.
+- `github.com/twmb/franz-go` - Kafka producer, consumer groups и manual offset management.

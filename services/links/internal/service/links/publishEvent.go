@@ -31,7 +31,7 @@ func (service *linksService) publishLinkEvent(ctx context.Context, eventType str
 		return
 	}
 
-	if err := service.producer.Publish(ctx, service.producer.Subject(eventType), payload); err != nil {
+	if err := service.producer.Publish(ctx, service.producer.Topic(), link.ShortLink, payload); err != nil {
 		slog.Warn("failed to publish link event", "event_type", eventType, "short_link", link.ShortLink, "error", err)
 	}
 }

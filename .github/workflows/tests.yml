@@ -55,15 +55,18 @@ jobs:
           REDIS_PASSWORD=red_pass
           REDIS_DB=0
           REDIS_TTL_MINUTES=600
-          NATS_HOST=127.0.0.1
-          NATS_PORT=4222
-          NATS_USER=nats_user
-          NATS_PASSWORD=nats_pass
-          NATS_STREAM=LINK_EVENTS
-          NATS_SUBJECT_PREFIX=links
-          NATS_CONSUMER_NAME=analytics_consumer
-          NATS_CONSUMER_BATCH=100
-          NATS_CONSUMER_WAIT_SECONDS=5
+          KAFKA_BROKERS=127.0.0.1:9092
+          KAFKA_CLIENT_ID=url_shortener_tests
+          KAFKA_TOPIC=link_events
+          KAFKA_DLQ_TOPIC=link_events.dlq
+          KAFKA_CONSUMER_GROUP=analytics_consumer
+          KAFKA_CONSUMER_BATCH=100
+          KAFKA_CONSUMER_WAIT_SECONDS=5
+          KAFKA_HANDLER_MAX_ATTEMPTS=5
+          KAFKA_RETRY_BACKOFF_SECONDS=1
+          KAFKA_RETRY_MAX_BACKOFF_SECONDS=16
+          KAFKA_PRODUCE_TIMEOUT_SECONDS=10
+          KAFKA_COMMIT_TIMEOUT_SECONDS=10
 
           AUTH_MIGRATION_DIR=./services/auth/migrations
           LINKS_MIGRATION_DIR=./services/links/migrations
@@ -84,6 +87,9 @@ jobs:
 
       - name: Generate mocks
         run: make generate-mocks
+
+      - name: Run linters
+        run: make lint
 
       - name: Run tests
         run: make test

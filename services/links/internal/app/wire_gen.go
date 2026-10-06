@@ -35,11 +35,14 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		return nil, nil, err
 	}
 	iCache := ProvideCacheCli(redisConf)
-	natsConf, err := ProvideNatsConf()
+	kafkaConf, err := ProvideKafkaConf()
 	if err != nil {
 		return nil, nil, err
 	}
-	iProducer := ProvideProducer(natsConf)
+	iProducer, err := ProvideProducer(kafkaConf)
+	if err != nil {
+		return nil, nil, err
+	}
 	iJwtConf, err := ProvideJwtConf()
 	if err != nil {
 		return nil, nil, err

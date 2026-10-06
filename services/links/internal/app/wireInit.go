@@ -17,7 +17,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 		ProvidePgConf,
 		ProvideJwtConf,
 		ProvideRedisConf,
-		ProvideNatsConf,
+		ProvideKafkaConf,
 
 		ProvidePgPool,
 

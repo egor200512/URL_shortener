@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	LINK_EVENTS   = "analytics.link_events"
+	EVENTS_TABLE  = "analytics.link_events"
 	ID            = "id"
 	EVENT_TYPE    = "event_type"
 	USER_ID       = "user_id"

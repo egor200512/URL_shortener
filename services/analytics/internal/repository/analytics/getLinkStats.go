@@ -17,7 +17,7 @@ func (repo *analyticsRepository) GetLinkStats(ctx context.Context, shortLink str
 	query := fmt.Sprintf(
 		`SELECT %s, COUNT(*) FROM %s WHERE %s = $1 GROUP BY %s`,
 		EVENT_TYPE,
-		LINK_EVENTS,
+		EVENTS_TABLE,
 		SHORT_LINK,
 		EVENT_TYPE,
 	)

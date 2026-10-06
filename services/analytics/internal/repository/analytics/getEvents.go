@@ -13,7 +13,7 @@ func (repo *analyticsRepository) GetEvents(ctx context.Context, limit, offset in
 		Total int32 `db:"total"`
 	}
 
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) AS total FROM %s`, LINK_EVENTS)
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) AS total FROM %s`, EVENTS_TABLE)
 
 	var total eventTotal
 	if err := pgxscan.Get(ctx, repo.pool, &total, countQuery); err != nil {
@@ -28,7 +28,7 @@ func (repo *analyticsRepository) GetEvents(ctx context.Context, limit, offset in
 		SHORT_LINK,
 		ORIGINAL_LINK,
 		EXECUTED_AT,
-		LINK_EVENTS,
+		EVENTS_TABLE,
 		EXECUTED_AT,
 	)
 

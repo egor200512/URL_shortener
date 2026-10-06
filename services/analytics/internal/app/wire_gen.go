@@ -29,7 +29,7 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	natsConf, err := ProvideNatsConf()
+	kafkaConf, err := ProvideKafkaConf()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -40,7 +40,10 @@ func InitServerApp(ctx context.Context) (*App, func(), error) {
 	iAnalyticsRepo := ProvideAnalyticsRepo(ctx, pool)
 	iAnalyticsService := ProvideAnalyticsService(iAnalyticsRepo)
 	analyticsServiceServer := ProvideAnalyticsHandler(iAnalyticsService)
-	iConsumer := ProvideConsumer(natsConf)
+	iConsumer, err := ProvideConsumer(kafkaConf)
+	if err != nil {
+		return nil, nil, err
+	}
 	app := &App{
 		HttpConf:         httpConf,
 		GrpcConf:         grpcConf,

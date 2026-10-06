@@ -74,7 +74,7 @@ func TestLinksService_CreateLink(t *testing.T) {
 				})).Return(tt.cacheErr).Once()
 			}
 			if tt.wantPublish {
-				expectLinkEventPublish(producer, events.LinkCreated, "links.created", created, tt.publishErr)
+				expectLinkEventPublish(producer, events.LinkCreated, created, tt.publishErr)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -131,7 +131,7 @@ func TestLinksService_GetLinkInfo(t *testing.T) {
 				})).Return(nil).Once()
 			}
 			if tt.wantPublish {
-				expectLinkEventPublish(producer, events.LinkFetched, "links.fetched", tt.wantLink, tt.publishErr)
+				expectLinkEventPublish(producer, events.LinkFetched, tt.wantLink, tt.publishErr)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -224,7 +224,7 @@ func TestLinksService_DeleteLink(t *testing.T) {
 				cache.On("DelShort", mock.Anything, "abc123").Return(tt.cacheErr).Once()
 			}
 			if tt.wantPublish {
-				expectLinkEventPublish(producer, events.LinkDeleted, "links.deleted", tt.link, tt.publishErr)
+				expectLinkEventPublish(producer, events.LinkDeleted, tt.link, tt.publishErr)
 			}
 
 			svc := NewLinksService(repo, cache, producer, nil)
@@ -234,14 +234,14 @@ func TestLinksService_DeleteLink(t *testing.T) {
 	}
 }
 
-func expectLinkEventPublish(producer *mocks.IProducer, eventType, subject string, link *models.Link, publishErr ...error) {
+func expectLinkEventPublish(producer *mocks.IProducer, eventType string, link *models.Link, publishErr ...error) {
 	var err error
 	if len(publishErr) > 0 {
 		err = publishErr[0]
 	}
 
-	producer.On("Subject", eventType).Return(subject).Once()
-	producer.On("Publish", mock.Anything, subject, mock.MatchedBy(func(payload []byte) bool {
+	producer.On("Topic").Return("link_events").Once()
+	producer.On("Publish", mock.Anything, "link_events", link.ShortLink, mock.MatchedBy(func(payload []byte) bool {
 		var event events.LinkEvent
 		if err := json.Unmarshal(payload, &event); err != nil {
 			return false

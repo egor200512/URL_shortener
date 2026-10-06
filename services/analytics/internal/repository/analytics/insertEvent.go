@@ -10,7 +10,7 @@ import (
 func (repo *analyticsRepository) InsertEvent(ctx context.Context, event *models.LinkEvent) error {
 	query := fmt.Sprintf(
 		`INSERT INTO %s (%s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5)`,
-		LINK_EVENTS,
+		EVENTS_TABLE,
 		EVENT_TYPE,
 		USER_ID,
 		SHORT_LINK,

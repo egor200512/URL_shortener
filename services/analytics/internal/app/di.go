@@ -11,7 +11,7 @@ import (
 	"github.com/egor200512/URL_shortener/shared/configs"
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
 	"github.com/egor200512/URL_shortener/shared/pkg/broker"
-	nats "github.com/egor200512/URL_shortener/shared/pkg/broker/nats"
+	kafka "github.com/egor200512/URL_shortener/shared/pkg/broker/kafka"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -31,8 +31,8 @@ func ProvidePgConf() (*configs.PgConf, error) {
 	return configs.NewPgConf()
 }
 
-func ProvideNatsConf() (*configs.NatsConf, error) {
-	return configs.NewNatsConf()
+func ProvideKafkaConf() (*configs.KafkaConf, error) {
+	return configs.NewKafkaConf()
 }
 
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
@@ -51,6 +51,6 @@ func ProvideAnalyticsHandler(svc as.IAnalyticsService) desc.AnalyticsServiceServ
 	return ah.NewAnalyticsRouter(svc)
 }
 
-func ProvideConsumer(cfg *configs.NatsConf) broker.IConsumer {
-	return nats.NewConsumer(cfg)
+func ProvideConsumer(cfg *configs.KafkaConf) (broker.IConsumer, error) {
+	return kafka.NewConsumer(cfg)
 }

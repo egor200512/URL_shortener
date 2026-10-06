@@ -18,9 +18,7 @@ func NewIProducer(t interface {
 }) *IProducer {
 	mock := &IProducer{}
 	mock.Mock.Test(t)
-
 	t.Cleanup(func() { mock.AssertExpectations(t) })
-
 	return mock
 }
 
@@ -40,23 +38,18 @@ func (_m *IProducer) EXPECT() *IProducer_Expecter {
 // Close provides a mock function for the type IProducer
 func (_mock *IProducer) Close() {
 	_mock.Called()
-	return
 }
 
-// IProducer_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
 type IProducer_Close_Call struct {
 	*mock.Call
 }
 
-// Close is a helper method to define mock.On call
 func (_e *IProducer_Expecter) Close() *IProducer_Close_Call {
 	return &IProducer_Close_Call{Call: _e.mock.On("Close")}
 }
 
 func (_c *IProducer_Close_Call) Run(run func()) *IProducer_Close_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
+	_c.Call.Run(func(mock.Arguments) { run() })
 	return _c
 }
 
@@ -71,54 +64,44 @@ func (_c *IProducer_Close_Call) RunAndReturn(run func()) *IProducer_Close_Call {
 }
 
 // Publish provides a mock function for the type IProducer
-func (_mock *IProducer) Publish(ctx context.Context, subject string, payload []byte) error {
-	ret := _mock.Called(ctx, subject, payload)
-
+func (_mock *IProducer) Publish(ctx context.Context, topic string, key string, payload []byte) error {
+	ret := _mock.Called(ctx, topic, key, payload)
 	if len(ret) == 0 {
 		panic("no return value specified for Publish")
 	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []byte) error); ok {
-		r0 = returnFunc(ctx, subject, payload)
-	} else {
-		r0 = ret.Error(0)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []byte) error); ok {
+		return returnFunc(ctx, topic, key, payload)
 	}
-	return r0
+	return ret.Error(0)
 }
 
-// IProducer_Publish_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Publish'
 type IProducer_Publish_Call struct {
 	*mock.Call
 }
 
-// Publish is a helper method to define mock.On call
-//   - ctx context.Context
-//   - subject string
-//   - payload []byte
-func (_e *IProducer_Expecter) Publish(ctx interface{}, subject interface{}, payload interface{}) *IProducer_Publish_Call {
-	return &IProducer_Publish_Call{Call: _e.mock.On("Publish", ctx, subject, payload)}
+func (_e *IProducer_Expecter) Publish(ctx interface{}, topic interface{}, key interface{}, payload interface{}) *IProducer_Publish_Call {
+	return &IProducer_Publish_Call{Call: _e.mock.On("Publish", ctx, topic, key, payload)}
 }
 
-func (_c *IProducer_Publish_Call) Run(run func(ctx context.Context, subject string, payload []byte)) *IProducer_Publish_Call {
+func (_c *IProducer_Publish_Call) Run(run func(context.Context, string, string, []byte)) *IProducer_Publish_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
+		var ctx context.Context
 		if args[0] != nil {
-			arg0 = args[0].(context.Context)
+			ctx = args[0].(context.Context)
 		}
-		var arg1 string
+		var topic string
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			topic = args[1].(string)
 		}
-		var arg2 []byte
+		var key string
 		if args[2] != nil {
-			arg2 = args[2].([]byte)
+			key = args[2].(string)
 		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
+		var payload []byte
+		if args[3] != nil {
+			payload = args[3].([]byte)
+		}
+		run(ctx, topic, key, payload)
 	})
 	return _c
 }
@@ -128,58 +111,42 @@ func (_c *IProducer_Publish_Call) Return(err error) *IProducer_Publish_Call {
 	return _c
 }
 
-func (_c *IProducer_Publish_Call) RunAndReturn(run func(ctx context.Context, subject string, payload []byte) error) *IProducer_Publish_Call {
+func (_c *IProducer_Publish_Call) RunAndReturn(run func(context.Context, string, string, []byte) error) *IProducer_Publish_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Subject provides a mock function for the type IProducer
-func (_mock *IProducer) Subject(eventType string) string {
-	ret := _mock.Called(eventType)
-
+// Topic provides a mock function for the type IProducer
+func (_mock *IProducer) Topic() string {
+	ret := _mock.Called()
 	if len(ret) == 0 {
-		panic("no return value specified for Subject")
+		panic("no return value specified for Topic")
 	}
-
-	var r0 string
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(eventType)
-	} else {
-		r0 = ret.Get(0).(string)
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		return returnFunc()
 	}
-	return r0
+	return ret.String(0)
 }
 
-// IProducer_Subject_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Subject'
-type IProducer_Subject_Call struct {
+type IProducer_Topic_Call struct {
 	*mock.Call
 }
 
-// Subject is a helper method to define mock.On call
-//   - eventType string
-func (_e *IProducer_Expecter) Subject(eventType interface{}) *IProducer_Subject_Call {
-	return &IProducer_Subject_Call{Call: _e.mock.On("Subject", eventType)}
+func (_e *IProducer_Expecter) Topic() *IProducer_Topic_Call {
+	return &IProducer_Topic_Call{Call: _e.mock.On("Topic")}
 }
 
-func (_c *IProducer_Subject_Call) Run(run func(eventType string)) *IProducer_Subject_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
+func (_c *IProducer_Topic_Call) Run(run func()) *IProducer_Topic_Call {
+	_c.Call.Run(func(mock.Arguments) { run() })
 	return _c
 }
 
-func (_c *IProducer_Subject_Call) Return(s string) *IProducer_Subject_Call {
-	_c.Call.Return(s)
+func (_c *IProducer_Topic_Call) Return(topic string) *IProducer_Topic_Call {
+	_c.Call.Return(topic)
 	return _c
 }
 
-func (_c *IProducer_Subject_Call) RunAndReturn(run func(eventType string) string) *IProducer_Subject_Call {
+func (_c *IProducer_Topic_Call) RunAndReturn(run func() string) *IProducer_Topic_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -1,6 +1,7 @@
 include .env
 
 LOCAL_BIN = $(CURDIR)/shared/bin
+GOLANGCI_LINT_VERSION = v2.14.0
 
 # ==========================================================================================================================
 
@@ -10,6 +11,7 @@ install-all:
 	make install-grpc-gateway
 	make install-goose
 	make install-mockery
+	make install-golangci-lint
 
 install-grpc:
 	GOBIN=$(LOCAL_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
@@ -25,6 +27,9 @@ install-wire:
 
 install-mockery:
 	GOBIN=$(LOCAL_BIN) go install github.com/vektra/mockery/v3@v3.6.1
+
+install-golangci-lint:
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(LOCAL_BIN) $(GOLANGCI_LINT_VERSION)
 
 # ==========================================================================================================================
 
@@ -84,10 +89,15 @@ install-goose:
 
 # ==========================================================================================================================
 
-nats-events:
-	docker run --rm -it --network url_shortener_default natsio/nats-box \
-	nats --server nats://${NATS_USER}:${NATS_PASSWORD}@url_shortener_nats:4222 \
-	stream view ${NATS_STREAM}
+kafka-events:
+	docker exec -it url_shortener_kafka /opt/kafka/bin/kafka-console-consumer.sh \
+	--bootstrap-server localhost:9092 --topic ${KAFKA_TOPIC} --from-beginning \
+	--property print.key=true --property key.separator=" | "
+
+kafka-dlq-events:
+	docker exec -it url_shortener_kafka /opt/kafka/bin/kafka-console-consumer.sh \
+	--bootstrap-server localhost:9092 --topic ${KAFKA_DLQ_TOPIC} --from-beginning \
+	--property print.key=true --property print.headers=true --property key.separator=" | "
 
 # ==========================================================================================================================
 
@@ -97,6 +107,10 @@ test:
 	go test ./services/links/...
 	go test ./services/analytics/...
 	go test ./shared/...
+
+lint:
+	${LOCAL_BIN}/golangci-lint run --config .golangci.yml \
+	./services/auth/... ./services/links/... ./services/analytics/... ./shared/...
 
 # ==========================================================================================================================
 
@@ -152,7 +166,7 @@ app-setup:
 
 
 local-start:
-	docker compose up 
+	docker compose up
 
 docker-start:
-	docker compose --profile app up 
+	docker compose --profile app up

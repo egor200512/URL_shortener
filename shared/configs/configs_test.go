@@ -72,11 +72,11 @@ func TestNewRedisConf(t *testing.T) {
 	}
 }
 
-func TestNewNatsConf(t *testing.T) {
+func TestNewKafkaConf(t *testing.T) {
 	base := map[string]string{
-		NATS_URL:            "nats://localhost:4222",
-		NATS_STREAM:         "LINK_EVENTS",
-		NATS_SUBJECT_PREFIX: "links",
+		KAFKA_BROKERS:   "localhost:9092, kafka:19092",
+		KAFKA_TOPIC:     "link_events",
+		KAFKA_DLQ_TOPIC: "link_events.dlq",
 	}
 
 	tests := []struct {
@@ -84,31 +84,52 @@ func TestNewNatsConf(t *testing.T) {
 		mutate     func(map[string]string)
 		wantErrSub string
 	}{
-		{name: "missing url and host", mutate: func(env map[string]string) { delete(env, NATS_URL) }, wantErrSub: "failed to get nats host"},
-		{name: "missing url and port", mutate: func(env map[string]string) {
-			delete(env, NATS_URL)
-			env[NATS_HOST] = "localhost"
-		}, wantErrSub: "failed to get nats port"},
-		{name: "bad batch", mutate: func(env map[string]string) { env[NATS_CONSUMER_BATCH] = "bad" }, wantErrSub: "failed to get valid nats consumer batch"},
-		{name: "zero batch", mutate: func(env map[string]string) { env[NATS_CONSUMER_BATCH] = "0" }, wantErrSub: "failed to get valid nats consumer batch"},
-		{name: "bad wait", mutate: func(env map[string]string) { env[NATS_CONSUMER_WAIT] = "bad" }, wantErrSub: "failed to get valid nats consumer wait"},
-		{name: "zero wait", mutate: func(env map[string]string) { env[NATS_CONSUMER_WAIT] = "0" }, wantErrSub: "failed to get valid nats consumer wait"},
+		{name: "missing brokers", mutate: func(env map[string]string) { delete(env, KAFKA_BROKERS) }, wantErrSub: "failed to get kafka brokers"},
+		{name: "missing topic", mutate: func(env map[string]string) { delete(env, KAFKA_TOPIC) }, wantErrSub: "failed to get kafka topic"},
+		{name: "missing dlq topic", mutate: func(env map[string]string) { delete(env, KAFKA_DLQ_TOPIC) }, wantErrSub: "failed to get kafka dlq topic"},
+		{name: "bad batch", mutate: func(env map[string]string) { env[KAFKA_CONSUMER_BATCH] = "bad" }, wantErrSub: "failed to get valid kafka consumer batch"},
+		{name: "zero batch", mutate: func(env map[string]string) { env[KAFKA_CONSUMER_BATCH] = "0" }, wantErrSub: "failed to get valid kafka consumer batch"},
+		{name: "bad wait", mutate: func(env map[string]string) { env[KAFKA_CONSUMER_WAIT] = "bad" }, wantErrSub: "failed to get valid kafka consumer wait"},
+		{name: "bad attempts", mutate: func(env map[string]string) { env[KAFKA_HANDLER_MAX_ATTEMPTS] = "bad" }, wantErrSub: "failed to get valid kafka handler max attempts"},
+		{name: "bad retry backoff", mutate: func(env map[string]string) { env[KAFKA_RETRY_BACKOFF] = "0" }, wantErrSub: "failed to get valid kafka retry backoff"},
+		{name: "max backoff below base", mutate: func(env map[string]string) {
+			env[KAFKA_RETRY_BACKOFF] = "5"
+			env[KAFKA_RETRY_MAX_BACKOFF] = "4"
+		}, wantErrSub: "failed to get valid kafka retry max backoff"},
+		{name: "bad produce timeout", mutate: func(env map[string]string) { env[KAFKA_PRODUCE_TIMEOUT] = "0" }, wantErrSub: "failed to get valid kafka produce timeout"},
+		{name: "bad commit timeout", mutate: func(env map[string]string) { env[KAFKA_COMMIT_TIMEOUT] = "bad" }, wantErrSub: "failed to get valid kafka commit timeout"},
 		{name: "success"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			clearEnv(t, NATS_URL, NATS_HOST, NATS_PORT, NATS_USER, NATS_PASSWORD, NATS_STREAM, NATS_SUBJECT_PREFIX, NATS_CONSUMER_NAME, NATS_CONSUMER_BATCH, NATS_CONSUMER_WAIT)
+			clearEnv(t,
+				KAFKA_BROKERS,
+				KAFKA_CLIENT_ID,
+				KAFKA_TOPIC,
+				KAFKA_DLQ_TOPIC,
+				KAFKA_CONSUMER_GROUP,
+				KAFKA_CONSUMER_BATCH,
+				KAFKA_CONSUMER_WAIT,
+				KAFKA_HANDLER_MAX_ATTEMPTS,
+				KAFKA_RETRY_BACKOFF,
+				KAFKA_RETRY_MAX_BACKOFF,
+				KAFKA_PRODUCE_TIMEOUT,
+				KAFKA_COMMIT_TIMEOUT,
+			)
 			env := cloneEnv(base)
 			if tt.mutate != nil {
 				tt.mutate(env)
 			}
 			setEnv(t, env)
 
-			conf, err := NewNatsConf()
+			conf, err := NewKafkaConf()
 			assertErrContains(t, err, tt.wantErrSub)
-			if tt.wantErrSub == "" && (conf.URL() != base[NATS_URL] || conf.Stream() != base[NATS_STREAM] || conf.SubjectPrefix() != base[NATS_SUBJECT_PREFIX]) {
-				t.Fatalf("unexpected nats conf: url=%s stream=%s subject=%s", conf.URL(), conf.Stream(), conf.SubjectPrefix())
+			if tt.wantErrSub == "" && (len(conf.Brokers()) != 2 || conf.Brokers()[1] != "kafka:19092" || conf.Topic() != base[KAFKA_TOPIC] || conf.DLQTopic() != base[KAFKA_DLQ_TOPIC]) {
+				t.Fatalf("unexpected kafka conf: brokers=%v topic=%s dlq=%s", conf.Brokers(), conf.Topic(), conf.DLQTopic())
+			}
+			if tt.wantErrSub == "" && (conf.ConsumerGroup() != defaultKafkaConsumerGroup || conf.HandlerMaxAttempts() != defaultKafkaHandlerMaxAttempts) {
+				t.Fatalf("unexpected kafka defaults: group=%s attempts=%d", conf.ConsumerGroup(), conf.HandlerMaxAttempts())
 			}
 		})
 	}

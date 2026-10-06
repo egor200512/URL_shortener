@@ -154,7 +154,7 @@ func (a *App) runConsumer(ctx context.Context) error {
 		return nil
 	}
 
-	slog.Info("nats consumer is running")
+	slog.Info("kafka consumer is running")
 	if err := a.Consumer.Consume(ctx, a.handleLinkEvent); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil

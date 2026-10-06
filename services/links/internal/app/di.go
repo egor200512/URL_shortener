@@ -6,7 +6,7 @@ import (
 	descA "github.com/egor200512/URL_shortener/shared/gen/auth"
 	descL "github.com/egor200512/URL_shortener/shared/gen/links"
 	"github.com/egor200512/URL_shortener/shared/pkg/broker"
-	nats "github.com/egor200512/URL_shortener/shared/pkg/broker/nats"
+	kafka "github.com/egor200512/URL_shortener/shared/pkg/broker/kafka"
 	cache "github.com/egor200512/URL_shortener/shared/pkg/cache"
 	red "github.com/egor200512/URL_shortener/shared/pkg/cache/redis"
 	"github.com/egor200512/URL_shortener/shared/pkg/logger"
@@ -42,8 +42,8 @@ func ProvideRedisConf() (*configs.RedisConf, error) {
 	return configs.NewRedisConf()
 }
 
-func ProvideNatsConf() (*configs.NatsConf, error) {
-	return configs.NewNatsConf()
+func ProvideKafkaConf() (*configs.KafkaConf, error) {
+	return configs.NewKafkaConf()
 }
 
 func ProvidePgPool(ctx context.Context, cfg *configs.PgConf) (*pgxpool.Pool, error) {
@@ -66,8 +66,8 @@ func ProvideCacheCli(cfg *configs.RedisConf) cache.ICache {
 	return red.NewRedisCli(cfg)
 }
 
-func ProvideProducer(cfg *configs.NatsConf) broker.IProducer {
-	return nats.NewProducer(cfg)
+func ProvideProducer(cfg *configs.KafkaConf) (broker.IProducer, error) {
+	return kafka.NewProducer(cfg)
 }
 
 func ProvideAuthServiceClient(conf *configs.GrpcConf) descA.AuthServiceClient {

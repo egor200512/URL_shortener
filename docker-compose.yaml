@@ -57,9 +57,11 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-red_pass}
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_TTL_MINUTES: ${REDIS_TTL_MINUTES:-600}
-      NATS_URL: nats://${NATS_USER:-nats_user}:${NATS_PASSWORD:-nats_pass}@url_shortener_nats:4222
-      NATS_STREAM: ${NATS_STREAM:-LINK_EVENTS}
-      NATS_SUBJECT_PREFIX: ${NATS_SUBJECT_PREFIX:-links}
+      KAFKA_BROKERS: url_shortener_kafka:19092
+      KAFKA_CLIENT_ID: links
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-link_events}
+      KAFKA_DLQ_TOPIC: ${KAFKA_DLQ_TOPIC:-link_events.dlq}
+      KAFKA_PRODUCE_TIMEOUT_SECONDS: ${KAFKA_PRODUCE_TIMEOUT_SECONDS:-10}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local_secret_key}
       JWT_ACCESS_EXPIRY_MINUTES: ${JWT_ACCESS_EXPIRY_MINUTES:-60}
     ports:
@@ -72,8 +74,8 @@ services:
         condition: service_completed_successfully
       url_shortener_redis:
         condition: service_healthy
-      url_shortener_nats:
-        condition: service_healthy
+      url_shortener_kafka_init:
+        condition: service_completed_successfully
 
   url_shortener_analytics:
     profiles:
@@ -98,12 +100,18 @@ services:
       PG_AUTH_DSN: host=url_shortener_auth_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
       PG_LINKS_DSN: host=url_shortener_links_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
       PG_ANALYTICS_DSN: host=url_shortener_analytics_pg user=${PG_USER:-user} password=${PG_PASSWORD:-pass} dbname=${PG_NAME:-user} port=5432 sslmode=disable
-      NATS_URL: nats://${NATS_USER:-nats_user}:${NATS_PASSWORD:-nats_pass}@url_shortener_nats:4222
-      NATS_STREAM: ${NATS_STREAM:-LINK_EVENTS}
-      NATS_SUBJECT_PREFIX: ${NATS_SUBJECT_PREFIX:-links}
-      NATS_CONSUMER_NAME: ${NATS_CONSUMER_NAME:-analytics_consumer}
-      NATS_CONSUMER_BATCH: ${NATS_CONSUMER_BATCH:-100}
-      NATS_CONSUMER_WAIT_SECONDS: ${NATS_CONSUMER_WAIT_SECONDS:-5}
+      KAFKA_BROKERS: url_shortener_kafka:19092
+      KAFKA_CLIENT_ID: analytics
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-link_events}
+      KAFKA_DLQ_TOPIC: ${KAFKA_DLQ_TOPIC:-link_events.dlq}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP:-analytics_consumer}
+      KAFKA_CONSUMER_BATCH: ${KAFKA_CONSUMER_BATCH:-100}
+      KAFKA_CONSUMER_WAIT_SECONDS: ${KAFKA_CONSUMER_WAIT_SECONDS:-5}
+      KAFKA_HANDLER_MAX_ATTEMPTS: ${KAFKA_HANDLER_MAX_ATTEMPTS:-5}
+      KAFKA_RETRY_BACKOFF_SECONDS: ${KAFKA_RETRY_BACKOFF_SECONDS:-1}
+      KAFKA_RETRY_MAX_BACKOFF_SECONDS: ${KAFKA_RETRY_MAX_BACKOFF_SECONDS:-16}
+      KAFKA_PRODUCE_TIMEOUT_SECONDS: ${KAFKA_PRODUCE_TIMEOUT_SECONDS:-10}
+      KAFKA_COMMIT_TIMEOUT_SECONDS: ${KAFKA_COMMIT_TIMEOUT_SECONDS:-10}
     ports:
       - "${HTTP_ANALYTICS_PORT:-8085}:${HTTP_ANALYTICS_PORT:-8085}"
       - "${GRPC_ANALYTICS_PORT:-8082}:${GRPC_ANALYTICS_PORT:-8082}"
@@ -111,8 +119,8 @@ services:
     depends_on:
       url_shortener_analytics_migrate:
         condition: service_completed_successfully
-      url_shortener_nats:
-        condition: service_healthy
+      url_shortener_kafka_init:
+        condition: service_completed_successfully
 
   url_shortener_auth_migrate:
     profiles:
@@ -242,26 +250,78 @@ services:
       timeout: 5s
       retries: 10
 
-  url_shortener_nats:
-    image: nats:2-alpine
-    container_name: url_shortener_nats
+  url_shortener_kafka:
+    image: apache/kafka:4.2.2
+    hostname: url_shortener_kafka
+    container_name: url_shortener_kafka
     restart: unless-stopped
-    command:
-      - "--jetstream"
-      - "--store_dir=/data/js"
-      - "--http_port=8222"
-      - "--user=${NATS_USER:-nats_user}"
-      - "--pass=${NATS_PASSWORD:-nats_pass}"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9092},PLAINTEXT://url_shortener_kafka:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@url_shortener_kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
     ports:
-      - "${NATS_PORT:-4222}:4222"
-      - "${NATS_MONITORING_PORT:-8222}:8222"
+      - "${KAFKA_PORT:-9092}:9092"
     volumes:
-      - nats_js:/data/js
+      - kafka_data:/tmp/kraft-combined-logs
+    depends_on:
+      url_shortener_kafka_storage_init:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz | grep ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  url_shortener_kafka_storage_init:
+    image: apache/kafka:4.2.2
+    container_name: url_shortener_kafka_storage_init
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown -R 1000:1000 /tmp/kraft-combined-logs"]
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+    restart: "no"
+
+  url_shortener_kafka_init:
+    image: apache/kafka:4.2.2
+    container_name: url_shortener_kafka_init
+    depends_on:
+      url_shortener_kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        /opt/kafka/bin/kafka-topics.sh \
+          --bootstrap-server url_shortener_kafka:19092 \
+          --create --if-not-exists \
+          --topic ${KAFKA_TOPIC:-link_events} \
+          --partitions ${KAFKA_TOPIC_PARTITIONS:-3} \
+          --replication-factor 1 \
+          --config retention.ms=${KAFKA_RETENTION_MS:--1}
+        /opt/kafka/bin/kafka-topics.sh \
+          --bootstrap-server url_shortener_kafka:19092 \
+          --create --if-not-exists \
+          --topic ${KAFKA_DLQ_TOPIC:-link_events.dlq} \
+          --partitions ${KAFKA_TOPIC_PARTITIONS:-3} \
+          --replication-factor 1 \
+          --config retention.ms=${KAFKA_RETENTION_MS:--1}
+    restart: "no"
 
   url_shortener_prometheus:
     image: prom/prometheus:v3.8.0
@@ -296,5 +356,5 @@ volumes:
   url_shortener_links_pg_volume:
   url_shortener_analytics_pg_volume:
   redis_volume:
-  nats_js:
+  kafka_data:
   grafana_data:
