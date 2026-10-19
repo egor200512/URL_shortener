@@ -15,7 +15,7 @@ import (
 func TestAnalyticsRepository_InsertEvent(t *testing.T) {
 	t.Parallel()
 
-	query := regexp.QuoteMeta("INSERT INTO analytics.link_events (event_type, user_id, short_link, original_link, executed_at) VALUES ($1, $2, $3, $4, $5)")
+	query := regexp.QuoteMeta("INSERT INTO analytics.link_events (id, event_type, user_id, short_link, original_link, executed_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING")
 	event := testEvent()
 
 	tests := []struct {
@@ -25,12 +25,17 @@ func TestAnalyticsRepository_InsertEvent(t *testing.T) {
 	}{
 		{name: "success", setup: func(db pgxmock.PgxPoolIface) {
 			db.ExpectExec(query).
-				WithArgs(event.EventType, event.UserID, event.ShortLink, event.OriginalLink, event.ExecutedAt).
+				WithArgs(event.ID, event.EventType, event.UserID, event.ShortLink, event.OriginalLink, event.ExecutedAt).
 				WillReturnResult(pgxmock.NewResult("INSERT", 1))
+		}},
+		{name: "duplicate is idempotent", setup: func(db pgxmock.PgxPoolIface) {
+			db.ExpectExec(query).
+				WithArgs(event.ID, event.EventType, event.UserID, event.ShortLink, event.OriginalLink, event.ExecutedAt).
+				WillReturnResult(pgxmock.NewResult("INSERT", 0))
 		}},
 		{name: "exec error", setup: func(db pgxmock.PgxPoolIface) {
 			db.ExpectExec(query).
-				WithArgs(event.EventType, event.UserID, event.ShortLink, event.OriginalLink, event.ExecutedAt).
+				WithArgs(event.ID, event.EventType, event.UserID, event.ShortLink, event.OriginalLink, event.ExecutedAt).
 				WillReturnError(errors.New("insert failed"))
 		}, wantErrSub: "insert failed"},
 	}

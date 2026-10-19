@@ -5,6 +5,7 @@ go 1.26.3
 require (
 	github.com/egor200512/URL_shortener/shared v0.0.0
 	github.com/georgysavva/scany v1.2.3
+	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.7.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.5
 	github.com/jackc/pgconn v1.14.3

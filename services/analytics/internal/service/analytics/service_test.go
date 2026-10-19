@@ -10,6 +10,7 @@ import (
 	"github.com/egor200512/URL_shortener/services/analytics/internal/mocks"
 	"github.com/egor200512/URL_shortener/services/analytics/internal/models"
 	desc "github.com/egor200512/URL_shortener/shared/gen/analytics"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -19,6 +20,7 @@ func TestAnalyticsService_RecordEvent(t *testing.T) {
 
 	executedAt := time.Date(2026, 5, 26, 10, 0, 0, 0, time.UTC)
 	req := &desc.RecordEventRequest{
+		EventId:      "11111111-1111-1111-1111-111111111111",
 		EventType:    "created",
 		UserId:       "user-id",
 		ShortLink:    "abc123",
@@ -50,6 +52,13 @@ func TestAnalyticsService_RecordEvent(t *testing.T) {
 					event.UserID != tt.req.UserId ||
 					event.ShortLink != tt.req.ShortLink ||
 					event.OriginalLink != tt.req.OriginalLink {
+					return false
+				}
+				if tt.req.EventId != "" {
+					if event.ID != tt.req.EventId {
+						return false
+					}
+				} else if _, err := uuid.Parse(event.ID); err != nil {
 					return false
 				}
 				if tt.req.ExecutedAt != nil {

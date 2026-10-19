@@ -19,7 +19,7 @@ func TestApp_handleLinkEvent(t *testing.T) {
 
 	executedAt := time.Date(2026, 5, 26, 10, 0, 0, 0, time.UTC)
 	validEvent := events.LinkEvent{
-		EventID:      "event-id",
+		EventID:      "11111111-1111-1111-1111-111111111111",
 		EventType:    events.LinkCreated,
 		UserID:       "user-id",
 		ShortLink:    "abc123",
@@ -34,6 +34,7 @@ func TestApp_handleLinkEvent(t *testing.T) {
 		wantErrSub string
 	}{
 		{name: "bad json", payload: []byte("{bad"), wantErrSub: "invalid character"},
+		{name: "empty event id", payload: mustMarshalEvent(t, cloneLinkEvent(validEvent, func(event *events.LinkEvent) { event.EventID = "" })), wantErrSub: "event id is required"},
 		{name: "empty event type", payload: mustMarshalEvent(t, cloneLinkEvent(validEvent, func(event *events.LinkEvent) { event.EventType = "" })), wantErrSub: "event type is required"},
 		{name: "empty user id", payload: mustMarshalEvent(t, cloneLinkEvent(validEvent, func(event *events.LinkEvent) { event.UserID = "" })), wantErrSub: "user id is required"},
 		{name: "empty short link", payload: mustMarshalEvent(t, cloneLinkEvent(validEvent, func(event *events.LinkEvent) { event.ShortLink = "" })), wantErrSub: "short link is required"},
@@ -49,7 +50,8 @@ func TestApp_handleLinkEvent(t *testing.T) {
 			svc := mocks.NewIAnalyticsService(t)
 			if tt.wantCall {
 				svc.On("RecordEvent", mock.Anything, mock.MatchedBy(func(req *desc.RecordEventRequest) bool {
-					return req.EventType == validEvent.EventType &&
+					return req.EventId == validEvent.EventID &&
+						req.EventType == validEvent.EventType &&
 						req.UserId == validEvent.UserID &&
 						req.ShortLink == validEvent.ShortLink &&
 						req.OriginalLink == validEvent.OriginalLink &&

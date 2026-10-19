@@ -35,6 +35,7 @@ message RecordEventRequest {
     string short_link = 3;
     string original_link = 4;
     google.protobuf.Timestamp executed_at = 5;
+    string event_id = 6;
 }
 
 message GetEventsRequest {

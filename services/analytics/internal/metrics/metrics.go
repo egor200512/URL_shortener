@@ -13,7 +13,7 @@ var (
 			Namespace: "url_shortener",
 			Subsystem: "analytics",
 			Name:      "events_consumed_total",
-			Help:      "Total number of successfully consumed link events.",
+			Help:      "Total successful Kafka handler calls, including idempotently handled redeliveries.",
 		},
 		[]string{"event_type"},
 	)
@@ -23,7 +23,7 @@ var (
 			Namespace: "url_shortener",
 			Subsystem: "analytics",
 			Name:      "events_consume_errors_total",
-			Help:      "Total number of link event consume errors.",
+			Help:      "Total failed Kafka handler attempts, including retries.",
 		},
 	)
 
@@ -32,7 +32,7 @@ var (
 			Namespace: "url_shortener",
 			Subsystem: "analytics",
 			Name:      "event_handle_duration_seconds",
-			Help:      "Duration of link event handling in seconds.",
+			Help:      "Duration of successful and failed Kafka handler attempts in seconds.",
 			Buckets:   prometheus.DefBuckets,
 		},
 	)

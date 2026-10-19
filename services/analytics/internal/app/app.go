@@ -177,6 +177,10 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 		metrics.RecordConsumeError(start)
 		return fmt.Errorf("event type is required")
 	}
+	if event.EventID == "" {
+		metrics.RecordConsumeError(start)
+		return fmt.Errorf("event id is required")
+	}
 	if event.UserID == "" {
 		metrics.RecordConsumeError(start)
 		return fmt.Errorf("user id is required")
@@ -191,6 +195,7 @@ func (a *App) handleLinkEvent(ctx context.Context, payload []byte) error {
 	}
 
 	req := &desc.RecordEventRequest{
+		EventId:      event.EventID,
 		EventType:    event.EventType,
 		UserId:       event.UserID,
 		ShortLink:    event.ShortLink,

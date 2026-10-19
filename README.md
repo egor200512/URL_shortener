@@ -36,7 +36,7 @@
 │   └── analytics/               # Analytics service + Kafka consumer + metrics
 ├── shared/                      # configs, generated proto, jwt, cache, broker, events
 ├── prometheus/prometheus.yaml   # Prometheus scrape config
-├── grafana/provisioning/        # Grafana datasource provisioning
+├── grafana/provisioning/        # Grafana datasource + dashboard provisioning
 ├── docker-compose.yaml
 ├── go.work
 └── makefile
@@ -162,6 +162,8 @@ Links публикует JSON-события `created`, `fetched` и `deleted` �
 
 Analytics читает topic в consumer group `analytics_consumer`. Auto commit отключён: offset подтверждается только после успешной записи события в `analytics.link_events`. Обработка выполняется последовательно внутри partition и параллельно между partition.
 
+`event_id` из Kafka-события записывается в `analytics.link_events.id`. Вставка выполняется с `ON CONFLICT (id) DO NOTHING`, поэтому повторная доставка уже сохранённого события не создаёт дубликат. Для прямого вызова `RecordEvent` без `event_id` Analytics генерирует новый UUID.
+
 При ошибке handler выполняется до `KAFKA_HANDLER_MAX_ATTEMPTS` попыток с exponential backoff. Если все попытки исчерпаны, исходные key/payload и диагностические headers отправляются в `link_events.dlq`; исходный offset подтверждается только после успешной записи в DLQ. Если DLQ недоступен, offset не подтверждается.
 
 Kafka запускается одним KRaft-узлом. Topics создаёт контейнер `url_shortener_kafka_init`, сообщения хранятся в persistent volume без ограничения срока (`retention.ms=-1`). Это локальная конфигурация; для production следует использовать кластер с репликацией и защищёнными listeners.
@@ -204,6 +206,25 @@ Grafana datasource `Prometheus` подключается автоматичес�
 ```text
 http://url_shortener_prometheus:9090
 ```
+
+Поток метрик:
+
+```text
+Analytics (счётчики и histogram в памяти процесса)
+  -> GET /metrics раз в 5 секунд
+Prometheus (сохраняет временные ряды в prometheus_data, retention 7d)
+  <- PromQL-запросы Grafana
+Grafana (визуализирует ответы Prometheus)
+```
+
+Grafana автоматически загружает два dashboard в папку `URL Shortener`:
+
+- `URL Shortener - Analytics Pipeline` — доступность target, обработанные Kafka-события по типам, ошибки и p95 времени обработки;
+- `URL Shortener - Analytics Runtime` — uptime, CPU, память, goroutines и GC.
+
+В готовой конфигурации Prometheus обращается к Analytics по Docker DNS-имени `url_shortener_analytics:9090`, поэтому для полностью автоматической цепочки следует запускать профиль `app` (`make docker-start`). Если Analytics запускается на host через `go run`, target в `prometheus/prometheus.yaml` нужно заменить на `host.docker.internal:9090`.
+
+`url_shortener_analytics_events_consumed_total` — число успешных вызовов Kafka-handler, а не `COUNT(*)` строк PostgreSQL. При повторной доставке handler завершится успешно и счётчик увеличится, но строка с тем же `event_id` второй раз не вставится.
 
 ## API
 

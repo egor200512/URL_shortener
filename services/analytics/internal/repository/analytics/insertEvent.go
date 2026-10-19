@@ -9,18 +9,21 @@ import (
 
 func (repo *analyticsRepository) InsertEvent(ctx context.Context, event *models.LinkEvent) error {
 	query := fmt.Sprintf(
-		`INSERT INTO %s (%s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5)`,
+		`INSERT INTO %s (%s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (%s) DO NOTHING`,
 		EVENTS_TABLE,
+		ID,
 		EVENT_TYPE,
 		USER_ID,
 		SHORT_LINK,
 		ORIGINAL_LINK,
 		EXECUTED_AT,
+		ID,
 	)
 
 	_, err := repo.pool.Exec(
 		ctx,
 		query,
+		event.ID,
 		event.EventType,
 		event.UserID,
 		event.ShortLink,
